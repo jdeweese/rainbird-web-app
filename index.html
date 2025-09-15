@@ -9,6 +9,7 @@
         // Define ALL global functions immediately at the very top
         window.showSettings = function() {
             console.log('Settings button clicked');
+            // Load existing settings from server (not localStorage)
             fetch('/api/settings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -22,6 +23,7 @@
                     document.getElementById('settingsPassword').value = settings.controller_password || '';
                     document.getElementById('autoConnect').checked = settings.auto_connect || false;
                     document.getElementById('refreshInterval').value = settings.refresh_interval || 5;
+                    console.log('Settings loaded from server:', settings);
                 }
             })
             .catch(error => console.error('Failed to load settings:', error));
@@ -358,43 +360,78 @@
             updateSystemStatus();
         }
         
-        // Get zone names from settings (editable and persistent)
+        // Get zone names from server settings (not localStorage)
         function getZoneName(zoneNumber) {
-            const settings = JSON.parse(localStorage.getItem('rainbird_settings') || '{}');
-            const zoneNames = settings.zone_names || {};
-            return zoneNames[zoneNumber] || `Zone ${zoneNumber}`;
+            // Try to get from current settings first
+            const settingsIp = document.getElementById('settingsIp');
+            if (settingsIp && window.currentSettings && window.currentSettings.zone_names) {
+                return window.currentSettings.zone_names[zoneNumber] || `Zone ${zoneNumber}`;
+            }
+            return `Zone ${zoneNumber}`;
         }
         
-        // Save zone name to settings
+        // Save zone name to server settings
         function saveZoneName(zoneNumber, name) {
-            const settings = JSON.parse(localStorage.getItem('rainbird_settings') || '{}');
-            if (!settings.zone_names) settings.zone_names = {};
-            settings.zone_names[zoneNumber] = name;
-            localStorage.setItem('rainbird_settings', JSON.stringify(settings));
+            console.log(`Saving zone ${zoneNumber} name: ${name}`);
             
-            // Also save to server
+            // Load current settings first
             fetch('/api/settings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'save', settings: settings })
+                body: JSON.stringify({ action: 'load' })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success && result.settings) {
+                    const settings = result.settings;
+                    if (!settings.zone_names) settings.zone_names = {};
+                    settings.zone_names[zoneNumber] = name;
+                    
+                    // Save back to server
+                    return fetch('/api/settings', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'save', settings: settings })
+                    });
+                }
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    console.log('Zone name saved successfully');
+                    window.currentSettings = result.settings;
+                } else {
+                    console.error('Failed to save zone name');
+                }
+            })
+            .catch(error => {
+                console.error('Error saving zone name:', error);
             });
         }
         
-        // Edit zone name inline
+        // Edit zone name inline - FIXED
         window.editZoneName = function(zoneId) {
             const nameEl = document.getElementById(`zone-${zoneId}-name`);
             const currentName = nameEl.textContent;
+            
+            // Check if already editing
+            if (nameEl.style.display === 'none') {
+                return; // Already editing
+            }
             
             const input = document.createElement('input');
             input.type = 'text';
             input.value = currentName;
             input.className = 'zone-name-input';
+            
             input.onblur = function() {
                 const newName = input.value.trim() || `Zone ${zoneId}`;
                 nameEl.textContent = newName;
                 nameEl.style.display = 'block';
+                input.remove(); // Remove input element
                 saveZoneName(zoneId, newName);
             };
+            
             input.onkeypress = function(e) {
                 if (e.key === 'Enter') {
                     input.blur();
@@ -571,25 +608,46 @@
             }
         }
         
-        // Real-time status updates with configurable refresh rate
+        // Real-time status updates with configurable refresh rate - FIXED
         function startStatusUpdates() {
-            const settings = JSON.parse(localStorage.getItem('rainbird_settings') || '{}');
-            const refreshInterval = (settings.refresh_interval || 5) * 1000; // Convert to milliseconds
-            
-            console.log(`Starting status updates every ${refreshInterval/1000} seconds`);
-            
-            // Clear any existing interval
-            if (window.statusUpdateInterval) {
-                clearInterval(window.statusUpdateInterval);
-            }
-            
-            // Set new interval based on user settings
-            window.statusUpdateInterval = setInterval(() => {
+            // Get refresh interval from server settings, not localStorage
+            fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'load' })
+            })
+            .then(response => response.json())
+            .then(result => {
+                let refreshInterval = 5000; // Default 5 seconds
+                
+                if (result.success && result.settings && result.settings.refresh_interval) {
+                    refreshInterval = result.settings.refresh_interval * 1000; // Convert to milliseconds
+                    window.currentSettings = result.settings; // Store for zone names
+                }
+                
+                console.log(`Starting status updates every ${refreshInterval/1000} seconds`);
+                
+                // Clear any existing interval
+                if (window.statusUpdateInterval) {
+                    clearInterval(window.statusUpdateInterval);
+                }
+                
+                // Set new interval based on server settings
+                window.statusUpdateInterval = setInterval(() => {
+                    updateSystemStatus();
+                }, refreshInterval);
+                
+                // Initial update
                 updateSystemStatus();
-            }, refreshInterval);
-            
-            // Initial update
-            updateSystemStatus();
+            })
+            .catch(error => {
+                console.error('Failed to load refresh settings:', error);
+                // Fallback to 5 second interval
+                window.statusUpdateInterval = setInterval(() => {
+                    updateSystemStatus();
+                }, 5000);
+                updateSystemStatus();
+            });
         }
         
         // Refresh functions
