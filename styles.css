@@ -205,11 +205,20 @@ header h1 {
     flex-wrap: wrap;
 }
 
-.delay-buttons button {
-    flex: 1;
-    min-width: 60px;
-    padding: 4px 8px;
-    font-size: 12px;
+.duration-input {
+    padding: 6px 12px;
+    border: 1px solid var(--gray-300);
+    border-radius: 4px;
+    background: white;
+    width: 80px;
+    text-align: center;
+    font-size: 14px;
+}
+
+.duration-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
 }
     justify-content: space-between;
     align-items: center;

@@ -306,7 +306,7 @@
             startStatusUpdates();
         };
         
-        // Display zones with real controls and editable names
+        // Display zones with real controls and editable names - FIXED
         function displayZones(zonesData) {
             const zonesList = document.getElementById('zonesList');
             
@@ -322,6 +322,7 @@
             // Create zones based on real controller data
             for (let i = 1; i <= availableZones; i++) {
                 const zoneName = getZoneName(i);
+                console.log(`Zone ${i} name: ${zoneName}`);
                 zonesHTML += `
                     <div class="zone-item" id="zone-${i}">
                         <div class="zone-header">
@@ -332,14 +333,7 @@
                             </div>
                         </div>
                         <div class="zone-controls">
-                            <select class="duration-select" id="zone-${i}-duration">
-                                <option value="1" ${i === 1 ? 'selected' : ''}>1 min (TEST)</option>
-                                <option value="5">5 min</option>
-                                <option value="10">10 min</option>
-                                <option value="15">15 min</option>
-                                <option value="20">20 min</option>
-                                <option value="30">30 min</option>
-                            </select>
+                            <input type="number" class="duration-input" id="zone-${i}-duration" min="1" max="60" value="${i === 1 ? '1' : '10'}" placeholder="Minutes">
                             <button class="btn btn-success zone-start-btn" id="zone-${i}-start" onclick="window.startZone(${i})">Start</button>
                             <button class="btn btn-danger zone-stop-btn" id="zone-${i}-stop" onclick="window.stopZone(${i})" style="display: none;">Stop</button>
                         </div>
@@ -360,13 +354,14 @@
             updateSystemStatus();
         }
         
-        // Get zone names from server settings (not localStorage)
+        // Get zone names from server settings - FIXED
         function getZoneName(zoneNumber) {
-            // Try to get from current settings first
-            const settingsIp = document.getElementById('settingsIp');
-            if (settingsIp && window.currentSettings && window.currentSettings.zone_names) {
-                return window.currentSettings.zone_names[zoneNumber] || `Zone ${zoneNumber}`;
+            // Use current settings loaded from server
+            if (window.currentSettings && window.currentSettings.zone_names && window.currentSettings.zone_names[zoneNumber]) {
+                console.log(`Loading zone ${zoneNumber} name from settings:`, window.currentSettings.zone_names[zoneNumber]);
+                return window.currentSettings.zone_names[zoneNumber];
             }
+            console.log(`Using default name for zone ${zoneNumber}`);
             return `Zone ${zoneNumber}`;
         }
         
@@ -444,10 +439,17 @@
             input.select();
         };
         
-        // Zone control functions - REAL CONTROLLER COMMANDS
+        // Zone control functions - VERIFIED REAL CONTROLLER COMMANDS
         window.startZone = function(zoneId) {
             console.log(`🚿 Starting zone ${zoneId} on REAL controller`);
-            const duration = parseInt(document.getElementById(`zone-${zoneId}-duration`).value);
+            const durationInput = document.getElementById(`zone-${zoneId}-duration`);
+            const duration = parseInt(durationInput.value) || 10;
+            
+            // Validate duration
+            if (duration < 1 || duration > 60) {
+                showMessage('Duration must be between 1 and 60 minutes', 'error');
+                return;
+            }
             
             // RainBird protocol: 39 + zone (2 hex) + duration (4 hex, in seconds)
             const durationSeconds = duration * 60;
@@ -455,7 +457,8 @@
             const durationHex = durationSeconds.toString(16).padStart(4, '0');
             const command = `39${zoneHex}${durationHex}`;
             
-            console.log(`Real command: ${command} (Zone ${zoneId}, ${duration} min = ${durationSeconds}s)`);
+            console.log(`REAL COMMAND: ${command} (Zone ${zoneId}, ${duration} min = ${durationSeconds}s)`);
+            console.log(`Command breakdown: 39 (start) + ${zoneHex} (zone) + ${durationHex} (${durationSeconds}s)`);
             
             // Send REAL start command to controller
             fetch('/proxy', {
@@ -478,13 +481,24 @@
             })
             .then(response => response.json())
             .then(result => {
-                console.log('Real controller response:', result);
-                if (result.success && result.data) {
-                    updateZoneStatus(zoneId, 'active', duration);
-                    showMessage(`Zone ${zoneId} started for ${duration} minutes on REAL controller`, 'success');
+                console.log('REAL CONTROLLER RESPONSE:', result);
+                if (result.success && result.data && result.data.result) {
+                    const responseData = result.data.result.data;
+                    console.log('Controller response data:', responseData);
                     
-                    // Start real-time monitoring
-                    setTimeout(() => updateSystemStatus(), 2000);
+                    // Check if command was accepted (should return 003904 or similar)
+                    if (responseData && responseData.includes('39')) {
+                        updateZoneStatus(zoneId, 'active', duration);
+                        showMessage(`Zone ${zoneId} started for ${duration} minutes on REAL controller`, 'success');
+                        
+                        // Verify zone is actually running after 3 seconds
+                        setTimeout(() => {
+                            console.log('Verifying zone is actually running...');
+                            updateSystemStatus();
+                        }, 3000);
+                    } else {
+                        showMessage(`Zone ${zoneId} command sent but response unclear: ${responseData}`, 'warning');
+                    }
                 } else {
                     showMessage(`Failed to start Zone ${zoneId}: ${result.error || 'Controller error'}`, 'error');
                 }
@@ -1033,10 +1047,13 @@
                     
                     if (result.success && result.settings) {
                         const settings = result.settings;
+                        window.currentSettings = settings; // Store settings globally for zone names
+                        
                         const hasIP = settings.controller_ip && settings.controller_ip.trim();
                         const hasPassword = settings.controller_password && settings.controller_password !== '****';
                         
                         console.log('🔍 Validation - IP:', hasIP, 'Password:', hasPassword);
+                        console.log('🏷️ Zone names in settings:', settings.zone_names);
                         
                         if (hasIP && hasPassword) {
                             console.log('✅ Valid settings found, attempting auto-connect...');
