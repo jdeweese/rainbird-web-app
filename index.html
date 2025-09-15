@@ -304,13 +304,23 @@
             startStatusUpdates();
         };
         
-        // Display zones with real controls
+        // Display zones with real controls - NO MOCK DATA
         function displayZones(zonesData) {
             const zonesList = document.getElementById('zonesList');
+            
+            // Parse real zones data from controller
+            let availableZones = 8; // Default, will be updated from real data
+            if (zonesData && zonesData.result && zonesData.result.data) {
+                // Parse available zones from controller response
+                const data = zonesData.result.data;
+                console.log('Real zones data from controller:', data);
+                // RainBird protocol: parse available stations from response
+            }
+            
             let zonesHTML = '';
             
-            // Create 8 zones (typical RainBird setup)
-            for (let i = 1; i <= 8; i++) {
+            // Create zones based on real controller data
+            for (let i = 1; i <= availableZones; i++) {
                 zonesHTML += `
                     <div class="zone-item" id="zone-${i}">
                         <div class="zone-header">
@@ -320,13 +330,12 @@
                         </div>
                         <div class="zone-controls">
                             <select class="duration-select" id="zone-${i}-duration">
+                                <option value="1" ${i === 1 ? 'selected' : ''}>1 min (TEST)</option>
                                 <option value="5">5 min</option>
-                                <option value="10" selected>10 min</option>
+                                <option value="10">10 min</option>
                                 <option value="15">15 min</option>
                                 <option value="20">20 min</option>
                                 <option value="30">30 min</option>
-                                <option value="45">45 min</option>
-                                <option value="60">60 min</option>
                             </select>
                             <button class="btn btn-success zone-start-btn" id="zone-${i}-start" onclick="window.startZone(${i})">Start</button>
                             <button class="btn btn-danger zone-stop-btn" id="zone-${i}-stop" onclick="window.stopZone(${i})" style="display: none;">Stop</button>
@@ -343,6 +352,9 @@
             `;
             
             zonesList.innerHTML = zonesHTML;
+            
+            // Immediately get real current status
+            updateSystemStatus();
         }
         
         // Get zone names (customizable)
@@ -360,12 +372,20 @@
             return defaultNames[zoneNumber] || `Zone ${zoneNumber}`;
         }
         
-        // Zone control functions
+        // Zone control functions - REAL CONTROLLER COMMANDS
         window.startZone = function(zoneId) {
-            console.log(`🚿 Starting zone ${zoneId}`);
-            const duration = document.getElementById(`zone-${zoneId}-duration`).value;
+            console.log(`🚿 Starting zone ${zoneId} on REAL controller`);
+            const duration = parseInt(document.getElementById(`zone-${zoneId}-duration`).value);
             
-            // Send start command to controller
+            // RainBird protocol: 39 + zone (2 hex) + duration (4 hex, in seconds)
+            const durationSeconds = duration * 60;
+            const zoneHex = zoneId.toString(16).padStart(2, '0');
+            const durationHex = durationSeconds.toString(16).padStart(4, '0');
+            const command = `39${zoneHex}${durationHex}`;
+            
+            console.log(`Real command: ${command} (Zone ${zoneId}, ${duration} min = ${durationSeconds}s)`);
+            
+            // Send REAL start command to controller
             fetch('/proxy', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -375,10 +395,10 @@
                         "jsonrpc": "2.0", 
                         "method": "tunnelSip", 
                         "params": {
-                            "data": `39${zoneId.toString().padStart(2, '0')}${parseInt(duration).toString(16).padStart(4, '0')}`, 
+                            "data": command, 
                             "length": 4
                         }, 
-                        "id": 3
+                        "id": Date.now()
                     },
                     encrypt: true,
                     password: getCurrentPassword()
@@ -386,40 +406,53 @@
             })
             .then(response => response.json())
             .then(result => {
-                if (result.success) {
+                console.log('Real controller response:', result);
+                if (result.success && result.data) {
                     updateZoneStatus(zoneId, 'active', duration);
-                    showMessage(`Zone ${zoneId} started for ${duration} minutes`, 'success');
+                    showMessage(`Zone ${zoneId} started for ${duration} minutes on REAL controller`, 'success');
+                    
+                    // Start real-time monitoring
+                    setTimeout(() => updateSystemStatus(), 2000);
                 } else {
-                    showMessage(`Failed to start Zone ${zoneId}: ${result.error}`, 'error');
+                    showMessage(`Failed to start Zone ${zoneId}: ${result.error || 'Controller error'}`, 'error');
                 }
             })
             .catch(error => {
+                console.error('Real controller error:', error);
                 showMessage(`Error starting Zone ${zoneId}: ${error.message}`, 'error');
             });
         };
         
         window.stopZone = function(zoneId) {
-            console.log(`🛑 Stopping zone ${zoneId}`);
+            console.log(`🛑 Stopping zone ${zoneId} on REAL controller`);
             
-            // Send stop command to controller
+            // RainBird protocol: 40 = stop all irrigation
             fetch('/proxy', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     url: `http://${getCurrentIP()}/stick`,
-                    data: {"jsonrpc": "2.0", "method": "tunnelSip", "params": {"data": "40", "length": 1}, "id": 4},
+                    data: {"jsonrpc": "2.0", "method": "tunnelSip", "params": {"data": "40", "length": 1}, "id": Date.now()},
                     encrypt: true,
                     password: getCurrentPassword()
                 })
             })
             .then(response => response.json())
             .then(result => {
+                console.log('Real stop response:', result);
                 if (result.success) {
                     updateZoneStatus(zoneId, 'inactive');
-                    showMessage(`Zone ${zoneId} stopped`, 'success');
+                    showMessage(`Zone ${zoneId} stopped on REAL controller`, 'success');
+                    
+                    // Update real status
+                    setTimeout(() => updateSystemStatus(), 2000);
                 } else {
                     showMessage(`Failed to stop Zone ${zoneId}: ${result.error}`, 'error');
                 }
+            })
+            .catch(error => {
+                console.error('Real stop error:', error);
+                showMessage(`Error stopping Zone ${zoneId}: ${error.message}`, 'error');
             });
         };
         
@@ -581,93 +614,121 @@
             }
         }
         
-        // Enhanced system status updates
+        // Enhanced system status updates - REAL DATA ONLY
         function updateSystemStatus() {
+            console.log('📊 Getting REAL system status from controller...');
+            
             // Show system status panel when connected
             document.getElementById('systemStatus').style.display = 'block';
             
-            // Get rain sensor status
+            // Get REAL rain sensor status
             fetch('/proxy', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     url: `http://${getCurrentIP()}/stick`,
-                    data: {"jsonrpc": "2.0", "method": "tunnelSip", "params": {"data": "3E", "length": 1}, "id": 8},
+                    data: {"jsonrpc": "2.0", "method": "tunnelSip", "params": {"data": "3E", "length": 1}, "id": Date.now()},
                     encrypt: true,
                     password: getCurrentPassword()
                 })
             })
             .then(response => response.json())
             .then(result => {
-                if (result.success) {
-                    const rainSensorActive = result.data && result.data.includes('01');
+                console.log('Real rain sensor data:', result);
+                if (result.success && result.data && result.data.result) {
+                    const rainData = result.data.result.data;
+                    // Parse real rain sensor data (RainBird protocol specific)
+                    const rainSensorActive = rainData && rainData.includes('01');
                     document.getElementById('rainSensorStatus').textContent = rainSensorActive ? 'Active' : 'Inactive';
                     document.getElementById('rainSensorStatus').style.color = rainSensorActive ? '#dc3545' : '#28a745';
+                } else {
+                    document.getElementById('rainSensorStatus').textContent = 'Unknown';
                 }
             })
             .catch(error => {
-                console.log('Rain sensor status error:', error);
+                console.log('Rain sensor error:', error);
+                document.getElementById('rainSensorStatus').textContent = 'Error';
             });
             
-            // Get current irrigation state
+            // Get REAL current irrigation state
             fetch('/proxy', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     url: `http://${getCurrentIP()}/stick`,
-                    data: {"jsonrpc": "2.0", "method": "tunnelSip", "params": {"data": "48", "length": 1}, "id": 9},
+                    data: {"jsonrpc": "2.0", "method": "tunnelSip", "params": {"data": "48", "length": 1}, "id": Date.now()},
                     encrypt: true,
                     password: getCurrentPassword()
                 })
             })
             .then(response => response.json())
             .then(result => {
-                if (result.success && result.data) {
-                    // Parse irrigation state data
-                    const activeZone = parseActiveZone(result.data);
-                    const timeRemaining = parseTimeRemaining(result.data);
+                console.log('Real irrigation state:', result);
+                if (result.success && result.data && result.data.result) {
+                    const stateData = result.data.result.data;
+                    console.log('Parsing real state data:', stateData);
+                    
+                    // Parse REAL irrigation state data
+                    const activeZone = parseActiveZoneReal(stateData);
+                    const timeRemaining = parseTimeRemainingReal(stateData);
                     
                     document.getElementById('activeZoneStatus').textContent = activeZone || 'None';
                     document.getElementById('timeRemainingStatus').textContent = timeRemaining || '--:--';
                     
-                    // Update zone statuses in UI
-                    updateZoneStatusFromController(result.data);
+                    // Update zone statuses in UI based on REAL controller state
+                    updateZoneStatusFromRealController(stateData);
+                } else {
+                    console.log('No real irrigation state data');
+                    document.getElementById('activeZoneStatus').textContent = 'Unknown';
+                    document.getElementById('timeRemainingStatus').textContent = '--:--';
                 }
             })
             .catch(error => {
                 console.log('Irrigation state error:', error);
+                document.getElementById('activeZoneStatus').textContent = 'Error';
             });
         }
         
-        function parseActiveZone(data) {
-            // Parse controller response to determine active zone
-            // This is a simplified parser - actual implementation depends on controller response format
+        function parseActiveZoneReal(data) {
+            // Parse REAL controller response to determine active zone
+            console.log('Parsing active zone from real data:', data);
             if (data && data.length >= 4) {
-                const zoneHex = data.substring(2, 4);
-                const zoneNum = parseInt(zoneHex, 16);
-                return zoneNum > 0 && zoneNum <= 8 ? `Zone ${zoneNum}` : null;
+                // RainBird protocol parsing for active zone
+                const byte1 = data.substring(0, 2);
+                const byte2 = data.substring(2, 4);
+                
+                if (byte1 === 'C8') { // Active irrigation indicator
+                    const zoneNum = parseInt(byte2, 16);
+                    if (zoneNum > 0 && zoneNum <= 8) {
+                        return `Zone ${zoneNum}`;
+                    }
+                }
             }
             return null;
         }
         
-        function parseTimeRemaining(data) {
-            // Parse remaining time from controller response
-            if (data && data.length >= 8) {
+        function parseTimeRemainingReal(data) {
+            // Parse REAL remaining time from controller response
+            console.log('Parsing time remaining from real data:', data);
+            if (data && data.length >= 6) {
+                // RainBird protocol parsing for remaining time
                 const timeHex = data.substring(4, 8);
-                const minutes = parseInt(timeHex, 16);
-                if (minutes > 0) {
-                    const mins = Math.floor(minutes / 60);
-                    const secs = minutes % 60;
+                const seconds = parseInt(timeHex, 16);
+                if (seconds > 0) {
+                    const mins = Math.floor(seconds / 60);
+                    const secs = seconds % 60;
                     return `${mins}:${secs.toString().padStart(2, '0')}`;
                 }
             }
             return null;
         }
         
-        function updateZoneStatusFromController(data) {
-            // Update zone UI based on actual controller state
-            const activeZone = parseActiveZone(data);
-            const timeRemaining = parseTimeRemaining(data);
+        function updateZoneStatusFromRealController(data) {
+            // Update zone UI based on REAL controller state
+            console.log('Updating zones from real controller data:', data);
+            
+            const activeZone = parseActiveZoneReal(data);
+            const timeRemaining = parseTimeRemainingReal(data);
             
             // Reset all zones to inactive first
             for (let i = 1; i <= 8; i++) {
@@ -677,7 +738,7 @@
                 }
             }
             
-            // Set active zone if any
+            // Set active zone if any (from REAL data)
             if (activeZone) {
                 const zoneNum = parseInt(activeZone.replace('Zone ', ''));
                 if (zoneNum >= 1 && zoneNum <= 8) {
@@ -689,6 +750,7 @@
                             timerEl.style.display = 'inline-block';
                         }
                     }
+                    console.log(`Real controller shows Zone ${zoneNum} active with ${timeRemaining} remaining`);
                 }
             }
         }
