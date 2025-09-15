@@ -1,0 +1,11 @@
+{
+  "port": 8000,
+  "host": "localhost",
+  "cors": {
+    "allow_origin": "*",
+    "allow_methods": "GET, POST, OPTIONS",
+    "allow_headers": "Content-Type"
+  },
+  "timeout": 10,
+  "debug": true
+}

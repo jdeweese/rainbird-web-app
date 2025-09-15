@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quick Function Test</title>
+</head>
+<body>
+    <h1>Quick Function Test</h1>
+    <button onclick="testSettingsFunction()">Test Settings Function</button>
+    <div id="result"></div>
+    
+    <script>
+        function testSettingsFunction() {
+            const iframe = document.createElement('iframe');
+            iframe.src = 'http://localhost:8000';
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+            
+            iframe.onload = function() {
+                const appWindow = iframe.contentWindow;
+                const result = document.getElementById('result');
+                
+                if (typeof appWindow.showSettings === 'function') {
+                    result.innerHTML = '✅ showSettings function exists and is callable';
+                    result.style.color = 'green';
+                    
+                    // Try to call it
+                    try {
+                        appWindow.showSettings();
+                        result.innerHTML += '<br>✅ Function executed without error';
+                    } catch (error) {
+                        result.innerHTML += '<br>❌ Function execution failed: ' + error.message;
+                        result.style.color = 'red';
+                    }
+                } else {
+                    result.innerHTML = '❌ showSettings function not found';
+                    result.style.color = 'red';
+                }
+                
+                document.body.removeChild(iframe);
+            };
+        }
+    </script>
+</body>
+</html>

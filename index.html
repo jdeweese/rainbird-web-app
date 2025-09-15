@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RainBird Controller</title>
+    <link rel="stylesheet" href="styles.css">
+    <script>
+        // Define ALL global functions immediately at the very top
+        window.showSettings = function() {
+            console.log('Settings button clicked');
+            fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'load' })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success && result.settings) {
+                    const settings = result.settings;
+                    document.getElementById('settingsIp').value = settings.controller_ip || '';
+                    document.getElementById('settingsPassword').value = settings.controller_password || '';
+                    document.getElementById('autoConnect').checked = settings.auto_connect || false;
+                    document.getElementById('refreshInterval').value = settings.refresh_interval || 5;
+                }
+            })
+            .catch(error => console.error('Failed to load settings:', error));
+            
+            document.getElementById('settingsModal').style.display = 'flex';
+        };
+        
+        window.closeSettings = function() {
+            document.getElementById('settingsModal').style.display = 'none';
+        };
+        
+        window.testConnection = function() {
+            const btn = document.getElementById('testConnection');
+            const ip = document.getElementById('settingsIp').value.trim();
+            const password = document.getElementById('settingsPassword').value;
+            
+            if (!ip || !password) {
+                alert('Please enter both IP address and password');
+                return;
+            }
+            
+            btn.textContent = 'Testing...';
+            btn.disabled = true;
+            
+            fetch('/proxy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    url: `http://${ip}/stick`,
+                    data: {"jsonrpc": "2.0", "method": "tunnelSip", "params": {"data": "02", "length": 1}, "id": 1},
+                    encrypt: true,
+                    password: password
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    btn.textContent = 'Connected';
+                    btn.className = 'btn btn-success';
+                    btn.disabled = false;
+                } else {
+                    btn.textContent = 'Failed';
+                    btn.className = 'btn btn-danger';
+                    setTimeout(() => {
+                        btn.textContent = 'Test Connection';
+                        btn.className = 'btn btn-secondary';
+                        btn.disabled = false;
+                    }, 2000);
+                }
+            })
+            .catch(error => {
+                btn.textContent = 'Failed';
+                btn.className = 'btn btn-danger';
+                setTimeout(() => {
+                    btn.textContent = 'Test Connection';
+                    btn.className = 'btn btn-secondary';
+                    btn.disabled = false;
+                }, 2000);
+            });
+        };
+        
+        window.saveSettings = function() {
+            const ip = document.getElementById('settingsIp').value.trim();
+            const password = document.getElementById('settingsPassword').value;
+            const autoConnect = document.getElementById('autoConnect').checked;
+            const refreshInterval = parseInt(document.getElementById('refreshInterval').value);
+            
+            if (!ip) {
+                alert('Please enter a controller IP address');
+                return;
+            }
+            
+            const settings = {
+                controller_ip: ip,
+                controller_password: password,
+                auto_connect: autoConnect,
+                refresh_interval: refreshInterval
+            };
+            
+            fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'save', settings: settings })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    alert('Settings saved successfully!');
+                    document.getElementById('settingsModal').style.display = 'none';
+                    window.attemptConnection(ip, password);
+                } else {
+                    alert('Failed to save settings');
+                }
+            })
+            .catch(error => {
+                alert('Error saving settings: ' + error.message);
+            });
+        };
+        
+        window.attemptConnection = function(ip, password) {
+            console.log('Attempting connection to:', ip);
+            const statusEl = document.getElementById('connectionStatus');
+            statusEl.textContent = 'Connecting...';
+            statusEl.className = 'connection-status connecting';
+            
+            fetch('/proxy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    url: `http://${ip}/stick`,
+                    data: {"jsonrpc": "2.0", "method": "tunnelSip", "params": {"data": "02", "length": 1}, "id": 1},
+                    encrypt: true,
+                    password: password
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                console.log('Connection result:', result);
+                if (result.success) {
+                    statusEl.textContent = 'Connected';
+                    statusEl.className = 'connection-status connected';
+                    document.getElementById('disconnectBtn').style.display = 'inline-block';
+                    setTimeout(() => window.loadControllerData(), 500);
+                } else {
+                    statusEl.textContent = 'Connection Failed';
+                    statusEl.className = 'connection-status disconnected';
+                    console.error('Connection failed:', result.error);
+                }
+            })
+            .catch(error => {
+                console.error('Connection error:', error);
+                statusEl.textContent = 'Connection Failed';
+                statusEl.className = 'connection-status disconnected';
+            });
+        };
+        
+        window.handleDisconnect = function() {
+            document.getElementById('connectionStatus').textContent = 'Disconnected';
+            document.getElementById('connectionStatus').className = 'connection-status disconnected';
+            document.getElementById('disconnectBtn').style.display = 'none';
+            
+            const zonesList = document.getElementById('zonesList');
+            const programsList = document.getElementById('programsList');
+            if (zonesList) zonesList.innerHTML = '<div class="loading-message">Connect to controller to view zones</div>';
+            if (programsList) programsList.innerHTML = '<div class="loading-message">Connect to controller to view programs</div>';
+        };
+        
+        window.loadControllerData = function() {
+            const zonesList = document.getElementById('zonesList');
+            const programsList = document.getElementById('programsList');
+            
+            if (zonesList) {
+                zonesList.innerHTML = '<div class="loading-message">Loading zones...</div>';
+                setTimeout(() => {
+                    zonesList.innerHTML = `
+                        <div class="zone-item">
+                            <h4>Zone 1 - Front Yard</h4>
+                            <div class="zone-controls">
+                                <select class="duration-select">
+                                    <option value="10" selected>10 min</option>
+                                    <option value="15">15 min</option>
+                                </select>
+                                <button class="btn btn-success">Start</button>
+                            </div>
+                        </div>
+                        <div class="zone-item">
+                            <h4>Zone 2 - Back Yard</h4>
+                            <div class="zone-controls">
+                                <select class="duration-select">
+                                    <option value="10" selected>10 min</option>
+                                    <option value="15">15 min</option>
+                                </select>
+                                <button class="btn btn-success">Start</button>
+                            </div>
+                        </div>
+                    `;
+                }, 500);
+            }
+            
+            if (programsList) {
+                programsList.innerHTML = '<div class="loading-message">Loading programs...</div>';
+                setTimeout(() => {
+                    programsList.innerHTML = `
+                        <div class="program-item">
+                            <h4>Program A - Morning Routine</h4>
+                            <div class="program-details">Status: Enabled | Next run: 6:00 AM</div>
+                            <div class="program-actions">
+                                <button class="btn btn-success">Run Now</button>
+                                <button class="btn btn-secondary">Edit</button>
+                            </div>
+                        </div>
+                    `;
+                }, 800);
+            }
+        };
+        
+        // Auto-connect on page load
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'load' })
+                })
+                .then(response => response.json())
+                .then(result => {
+                    console.log('Settings loaded:', result);
+                    if (result.success && result.settings && result.settings.controller_ip && result.settings.controller_password && result.settings.controller_password !== '****') {
+                        console.log('Auto-connecting with IP:', result.settings.controller_ip);
+                        window.attemptConnection(result.settings.controller_ip, result.settings.controller_password);
+                    } else {
+                        console.log('No valid settings for auto-connect - password masked or missing');
+                        document.getElementById('connectionStatus').textContent = 'Configure Settings';
+                    }
+                })
+                .catch(error => {
+                    console.error('Failed to load settings:', error);
+                    document.getElementById('connectionStatus').textContent = 'Configure Settings';
+                });
+            }, 1000);
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>RainBird Controller</h1>
+            <div class="header-controls">
+                <button id="disconnectBtn" class="btn btn-secondary" style="display: none;" onclick="window.handleDisconnect()">Disconnect</button>
+                <button id="settingsBtn" class="btn btn-secondary" onclick="window.showSettings()">⚙️ Settings</button>
+                <div class="connection-status disconnected" id="connectionStatus">Configure Settings</div>
+            </div>
+        </header>
+
+        <!-- Settings Modal -->
+        <div id="settingsModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Settings</h2>
+                    <button id="closeSettings" class="btn btn-secondary" onclick="window.closeSettings()">×</button>
+                </div>
+                <div class="modal-body">
+                    <form id="settingsForm">
+                        <div class="form-group">
+                            <label for="settingsIp">Controller IP Address:</label>
+                            <input type="text" id="settingsIp">
+                        </div>
+                        <div class="form-group">
+                            <label for="settingsPassword">Password:</label>
+                            <input type="password" id="settingsPassword" placeholder="Controller password">
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="autoConnect"> Auto-connect on startup
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label for="refreshInterval">Refresh Interval (seconds):</label>
+                            <input type="number" id="refreshInterval" min="1" max="60" value="5">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button id="saveSettings" class="btn btn-primary" onclick="window.saveSettings()">Save Settings</button>
+                    <button id="testConnection" class="btn btn-secondary" onclick="window.testConnection()">Test Connection</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="control-panel" id="controlPanel">
+            <div class="main-content">
+                <div class="left-panel">
+                    <div class="zones-section panel-section">
+                        <h2>Irrigation Zones</h2>
+                        <div class="zones-list" id="zonesList">
+                            <div class="loading-message">Connect to controller to view zones</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="right-panel">
+                    <div class="programs-section panel-section">
+                        <h2>Programs</h2>
+                        <div class="programs-controls">
+                            <button id="refreshPrograms" class="btn btn-secondary">Refresh</button>
+                            <button id="editPrograms" class="btn btn-secondary">Edit Programs</button>
+                        </div>
+                        <div class="programs-list" id="programsList">
+                            <div class="loading-message">Connect to controller to view programs</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

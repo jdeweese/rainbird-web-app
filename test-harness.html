@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RainBird Test Harness</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .test-button { margin: 5px; padding: 10px 15px; background: #007bff; color: white; border: none; cursor: pointer; }
+        .test-button:hover { background: #0056b3; }
+        .log { background: #f8f9fa; padding: 10px; margin: 10px 0; border-left: 4px solid #007bff; }
+        .error { border-left-color: #dc3545; }
+        .success { border-left-color: #28a745; }
+    </style>
+</head>
+<body>
+    <h1>RainBird Web App Test Harness</h1>
+    
+    <div class="test-section">
+        <h3>Automated Tests</h3>
+        <button class="test-button" onclick="runAllTests()">Run All Tests</button>
+        <button class="test-button" onclick="clearLogs()">Clear Logs</button>
+    </div>
+    
+    <div class="test-section">
+        <h3>Manual Tests</h3>
+        <button class="test-button" onclick="testSettingsButton()">Test Settings Button</button>
+        <button class="test-button" onclick="testCloseSettings()">Test Close Settings</button>
+        <button class="test-button" onclick="testSaveSettings()">Test Save Settings</button>
+        <button class="test-button" onclick="testDisconnect()">Test Disconnect</button>
+        <button class="test-button" onclick="testLoadData()">Test Load Controller Data</button>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test Results</h3>
+        <div id="testResults"></div>
+    </div>
+    
+    <iframe id="appFrame" src="http://localhost:8000" width="100%" height="600" style="border: 1px solid #ccc; margin-top: 20px;"></iframe>
+    
+    <script>
+        function log(message, type = 'info') {
+            const results = document.getElementById('testResults');
+            const div = document.createElement('div');
+            div.className = `log ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+        
+        function clearLogs() {
+            document.getElementById('testResults').innerHTML = '';
+        }
+        
+        function getAppWindow() {
+            return document.getElementById('appFrame').contentWindow;
+        }
+        
+        function testSettingsButton() {
+            log('Testing Settings Button...');
+            try {
+                const appWin = getAppWindow();
+                if (appWin.showSettings) {
+                    appWin.showSettings();
+                    setTimeout(() => {
+                        const modal = appWin.document.getElementById('settingsModal');
+                        if (modal && modal.style.display === 'flex') {
+                            log('✅ Settings modal opened successfully', 'success');
+                        } else {
+                            log('❌ Settings modal did not open', 'error');
+                        }
+                    }, 100);
+                } else {
+                    log('❌ showSettings function not found', 'error');
+                }
+            } catch (error) {
+                log(`❌ Error testing settings button: ${error.message}`, 'error');
+            }
+        }
+        
+        function testCloseSettings() {
+            log('Testing Close Settings...');
+            try {
+                const appWin = getAppWindow();
+                if (appWin.closeSettings) {
+                    appWin.closeSettings();
+                    setTimeout(() => {
+                        const modal = appWin.document.getElementById('settingsModal');
+                        if (modal && modal.style.display === 'none') {
+                            log('✅ Settings modal closed successfully', 'success');
+                        } else {
+                            log('❌ Settings modal did not close', 'error');
+                        }
+                    }, 100);
+                } else {
+                    log('❌ closeSettings function not found', 'error');
+                }
+            } catch (error) {
+                log(`❌ Error testing close settings: ${error.message}`, 'error');
+            }
+        }
+        
+        function testSaveSettings() {
+            log('Testing Save Settings with mock data...');
+            try {
+                const appWin = getAppWindow();
+                // Fill in test data
+                appWin.document.getElementById('settingsIp').value = '192.168.1.100';
+                appWin.document.getElementById('settingsPassword').value = 'test123';
+                appWin.document.getElementById('autoConnect').checked = true;
+                
+                if (appWin.saveSettings) {
+                    appWin.saveSettings();
+                    log('✅ Save settings function called', 'success');
+                } else {
+                    log('❌ saveSettings function not found', 'error');
+                }
+            } catch (error) {
+                log(`❌ Error testing save settings: ${error.message}`, 'error');
+            }
+        }
+        
+        function testDisconnect() {
+            log('Testing Disconnect Button...');
+            try {
+                const appWin = getAppWindow();
+                const disconnectBtn = appWin.document.getElementById('disconnectBtn');
+                if (disconnectBtn) {
+                    disconnectBtn.click();
+                    log('✅ Disconnect button clicked', 'success');
+                } else {
+                    log('❌ Disconnect button not found', 'error');
+                }
+            } catch (error) {
+                log(`❌ Error testing disconnect: ${error.message}`, 'error');
+            }
+        }
+        
+        function testLoadData() {
+            log('Testing Load Controller Data...');
+            try {
+                const appWin = getAppWindow();
+                if (appWin.loadControllerData) {
+                    appWin.loadControllerData();
+                    setTimeout(() => {
+                        const zonesList = appWin.document.getElementById('zonesList');
+                        const programsList = appWin.document.getElementById('programsList');
+                        
+                        if (zonesList && zonesList.innerHTML.includes('Zone 1')) {
+                            log('✅ Zones loaded successfully', 'success');
+                        } else {
+                            log('❌ Zones not loaded', 'error');
+                        }
+                        
+                        if (programsList && programsList.innerHTML.includes('Program A')) {
+                            log('✅ Programs loaded successfully', 'success');
+                        } else {
+                            log('❌ Programs not loaded', 'error');
+                        }
+                    }, 1500);
+                } else {
+                    log('❌ loadControllerData function not found', 'error');
+                }
+            } catch (error) {
+                log(`❌ Error testing load data: ${error.message}`, 'error');
+            }
+        }
+        
+        function runAllTests() {
+            log('🚀 Starting automated test suite...');
+            clearLogs();
+            
+            setTimeout(() => testSettingsButton(), 500);
+            setTimeout(() => testCloseSettings(), 1500);
+            setTimeout(() => testSettingsButton(), 2500);
+            setTimeout(() => testSaveSettings(), 3500);
+            setTimeout(() => testLoadData(), 5000);
+            setTimeout(() => testDisconnect(), 7000);
+            setTimeout(() => log('🏁 Test suite completed'), 8000);
+        }
+        
+        // Wait for iframe to load
+        document.getElementById('appFrame').onload = function() {
+            log('📱 App loaded in iframe');
+        };
+    </script>
+</body>
+</html>
