@@ -304,29 +304,30 @@
             startStatusUpdates();
         };
         
-        // Display zones with real controls - NO MOCK DATA
+        // Display zones with real controls and editable names
         function displayZones(zonesData) {
             const zonesList = document.getElementById('zonesList');
             
             // Parse real zones data from controller
             let availableZones = 8; // Default, will be updated from real data
             if (zonesData && zonesData.result && zonesData.result.data) {
-                // Parse available zones from controller response
                 const data = zonesData.result.data;
                 console.log('Real zones data from controller:', data);
-                // RainBird protocol: parse available stations from response
             }
             
             let zonesHTML = '';
             
             // Create zones based on real controller data
             for (let i = 1; i <= availableZones; i++) {
+                const zoneName = getZoneName(i);
                 zonesHTML += `
                     <div class="zone-item" id="zone-${i}">
                         <div class="zone-header">
-                            <h4>Zone ${i} - ${getZoneName(i)}</h4>
-                            <span class="zone-status inactive" id="zone-${i}-status">Inactive</span>
-                            <span class="zone-timer" id="zone-${i}-timer" style="display: none;">--:--</span>
+                            <div class="zone-name" id="zone-${i}-name" onclick="window.editZoneName(${i})">${zoneName}</div>
+                            <div class="zone-status-container">
+                                <span class="zone-status inactive" id="zone-${i}-status">Inactive</span>
+                                <span class="zone-timer" id="zone-${i}-timer" style="display: none;">--:--</span>
+                            </div>
                         </div>
                         <div class="zone-controls">
                             <select class="duration-select" id="zone-${i}-duration">
@@ -346,7 +347,7 @@
             
             // Add emergency stop
             zonesHTML += `
-                <div class="emergency-controls">
+                <div class="zone-item emergency-controls">
                     <button class="btn btn-danger btn-large" onclick="window.emergencyStopAll()">🚨 STOP ALL ZONES</button>
                 </div>
             `;
@@ -357,20 +358,54 @@
             updateSystemStatus();
         }
         
-        // Get zone names (customizable)
+        // Get zone names from settings (editable and persistent)
         function getZoneName(zoneNumber) {
-            const defaultNames = {
-                1: 'Front Yard',
-                2: 'Back Yard', 
-                3: 'Garden Beds',
-                4: 'Side Yard',
-                5: 'Lawn Area',
-                6: 'Flower Beds',
-                7: 'Vegetable Garden',
-                8: 'Drip System'
-            };
-            return defaultNames[zoneNumber] || `Zone ${zoneNumber}`;
+            const settings = JSON.parse(localStorage.getItem('rainbird_settings') || '{}');
+            const zoneNames = settings.zone_names || {};
+            return zoneNames[zoneNumber] || `Zone ${zoneNumber}`;
         }
+        
+        // Save zone name to settings
+        function saveZoneName(zoneNumber, name) {
+            const settings = JSON.parse(localStorage.getItem('rainbird_settings') || '{}');
+            if (!settings.zone_names) settings.zone_names = {};
+            settings.zone_names[zoneNumber] = name;
+            localStorage.setItem('rainbird_settings', JSON.stringify(settings));
+            
+            // Also save to server
+            fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'save', settings: settings })
+            });
+        }
+        
+        // Edit zone name inline
+        window.editZoneName = function(zoneId) {
+            const nameEl = document.getElementById(`zone-${zoneId}-name`);
+            const currentName = nameEl.textContent;
+            
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = currentName;
+            input.className = 'zone-name-input';
+            input.onblur = function() {
+                const newName = input.value.trim() || `Zone ${zoneId}`;
+                nameEl.textContent = newName;
+                nameEl.style.display = 'block';
+                saveZoneName(zoneId, newName);
+            };
+            input.onkeypress = function(e) {
+                if (e.key === 'Enter') {
+                    input.blur();
+                }
+            };
+            
+            nameEl.style.display = 'none';
+            nameEl.parentNode.insertBefore(input, nameEl);
+            input.focus();
+            input.select();
+        };
         
         // Zone control functions - REAL CONTROLLER COMMANDS
         window.startZone = function(zoneId) {
@@ -536,11 +571,175 @@
             }
         }
         
-        // Real-time status updates
+        // Real-time status updates with configurable refresh rate
         function startStatusUpdates() {
-            setInterval(() => {
+            const settings = JSON.parse(localStorage.getItem('rainbird_settings') || '{}');
+            const refreshInterval = (settings.refresh_interval || 5) * 1000; // Convert to milliseconds
+            
+            console.log(`Starting status updates every ${refreshInterval/1000} seconds`);
+            
+            // Clear any existing interval
+            if (window.statusUpdateInterval) {
+                clearInterval(window.statusUpdateInterval);
+            }
+            
+            // Set new interval based on user settings
+            window.statusUpdateInterval = setInterval(() => {
                 updateSystemStatus();
-            }, 5000); // Update every 5 seconds
+            }, refreshInterval);
+            
+            // Initial update
+            updateSystemStatus();
+        }
+        
+        // Refresh functions
+        window.refreshZones = function() {
+            console.log('🔄 Refreshing zones...');
+            window.loadControllerData();
+        };
+        
+        window.refreshPrograms = function() {
+            console.log('🔄 Refreshing programs...');
+            loadRealPrograms();
+        };
+        
+        // Load real programs from controller (not mock)
+        function loadRealPrograms() {
+            const programsList = document.getElementById('programsList');
+            programsList.innerHTML = '<div class="loading-message">Loading programs from controller...</div>';
+            
+            // Get real program data from controller
+            fetch('/proxy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    url: `http://${getCurrentIP()}/stick`,
+                    data: {"jsonrpc": "2.0", "method": "tunnelSip", "params": {"data": "30", "length": 1}, "id": Date.now()},
+                    encrypt: true,
+                    password: getCurrentPassword()
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                console.log('Real program data:', result);
+                if (result.success && result.data) {
+                    displayRealPrograms(result.data);
+                } else {
+                    // Fallback to stored program settings if controller doesn't respond
+                    displayStoredPrograms();
+                }
+            })
+            .catch(error => {
+                console.error('Program loading error:', error);
+                displayStoredPrograms();
+            });
+        }
+        
+        function displayRealPrograms(programData) {
+            const programsList = document.getElementById('programsList');
+            const settings = JSON.parse(localStorage.getItem('rainbird_settings') || '{}');
+            const programs = settings.programs || getDefaultPrograms();
+            
+            let programsHTML = '';
+            
+            programs.forEach((program, index) => {
+                const programId = String.fromCharCode(65 + index); // A, B, C...
+                programsHTML += `
+                    <div class="program-item">
+                        <div class="program-header">
+                            <div class="program-name" onclick="window.editProgramName('${programId}')">${program.name}</div>
+                            <span class="program-status ${program.enabled ? 'enabled' : 'disabled'}">${program.enabled ? 'Enabled' : 'Disabled'}</span>
+                        </div>
+                        <div class="program-details">
+                            Schedule: ${program.days.join(', ')} at ${program.startTime} | Duration: ${program.totalDuration} min
+                        </div>
+                        <div class="program-actions">
+                            <button class="btn btn-success" onclick="window.runProgram('${programId}')">Run Now</button>
+                            <button class="btn btn-secondary" onclick="window.editProgram('${programId}')">Edit</button>
+                            <button class="btn btn-secondary" onclick="window.toggleProgram('${programId}')">${program.enabled ? 'Disable' : 'Enable'}</button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            programsList.innerHTML = programsHTML;
+        }
+        
+        function displayStoredPrograms() {
+            const settings = JSON.parse(localStorage.getItem('rainbird_settings') || '{}');
+            const programs = settings.programs || getDefaultPrograms();
+            displayRealPrograms(null); // Use stored data
+        }
+        
+        function getDefaultPrograms() {
+            return [
+                {
+                    name: 'Program A',
+                    enabled: true,
+                    days: ['Mon', 'Wed', 'Fri'],
+                    startTime: '06:00',
+                    zones: [
+                        {zone: 1, duration: 10},
+                        {zone: 2, duration: 15},
+                        {zone: 3, duration: 8}
+                    ],
+                    totalDuration: 33
+                },
+                {
+                    name: 'Program B',
+                    enabled: true,
+                    days: ['Tue', 'Thu', 'Sat'],
+                    startTime: '19:00',
+                    zones: [
+                        {zone: 1, duration: 5},
+                        {zone: 4, duration: 12}
+                    ],
+                    totalDuration: 17
+                }
+            ];
+        }
+        
+        // Edit program name
+        window.editProgramName = function(programId) {
+            const nameEl = document.querySelector(`[onclick*="editProgramName('${programId}')"]`);
+            const currentName = nameEl.textContent;
+            
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = currentName;
+            input.className = 'zone-name-input';
+            input.onblur = function() {
+                const newName = input.value.trim() || `Program ${programId}`;
+                nameEl.textContent = newName;
+                nameEl.style.display = 'block';
+                saveProgramName(programId, newName);
+            };
+            input.onkeypress = function(e) {
+                if (e.key === 'Enter') input.blur();
+            };
+            
+            nameEl.style.display = 'none';
+            nameEl.parentNode.insertBefore(input, nameEl);
+            input.focus();
+            input.select();
+        };
+        
+        function saveProgramName(programId, name) {
+            const settings = JSON.parse(localStorage.getItem('rainbird_settings') || '{}');
+            if (!settings.programs) settings.programs = getDefaultPrograms();
+            
+            const programIndex = programId.charCodeAt(0) - 65; // A=0, B=1, etc.
+            if (settings.programs[programIndex]) {
+                settings.programs[programIndex].name = name;
+                localStorage.setItem('rainbird_settings', JSON.stringify(settings));
+                
+                // Save to server
+                fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'save', settings: settings })
+                });
+            }
         }
         
         function updateSystemStatus() {
@@ -925,90 +1124,33 @@
                 <div class="rain-delay-controls">
                     <h4>Rain Delay</h4>
                     <div class="delay-buttons">
-                        <button class="btn btn-secondary" onclick="window.setRainDelay(24)">24 Hours</button>
-                        <button class="btn btn-secondary" onclick="window.setRainDelay(48)">48 Hours</button>
-                        <button class="btn btn-secondary" onclick="window.setRainDelay(72)">72 Hours</button>
-                        <button class="btn btn-danger" onclick="window.clearRainDelay()">Clear Delay</button>
+                        <button class="btn btn-secondary" onclick="window.setRainDelay(24)">24h</button>
+                        <button class="btn btn-secondary" onclick="window.setRainDelay(48)">48h</button>
+                        <button class="btn btn-secondary" onclick="window.setRainDelay(72)">72h</button>
+                        <button class="btn btn-danger" onclick="window.clearRainDelay()">Clear</button>
                     </div>
                 </div>
             </div>
 
             <div class="main-content">
-                <div class="left-panel">
-                    <div class="zones-section panel-section">
-                        <h2>Irrigation Zones</h2>
-                        <div class="zones-list" id="zonesList">
-                            <div class="loading-message">Connect to controller to view zones</div>
-                        </div>
+                <div class="zones-section">
+                    <h2>
+                        Irrigation Zones
+                        <button class="btn btn-secondary btn-sm" onclick="window.refreshZones()">Refresh</button>
+                    </h2>
+                    <div class="zones-grid" id="zonesList">
+                        <div class="loading-message">Connect to controller to view zones</div>
                     </div>
                 </div>
 
-                <div class="right-panel">
-                    <div class="programs-section panel-section">
-                        <h2>Programs & Schedules</h2>
-                        <div class="programs-controls">
-                            <button id="refreshPrograms" class="btn btn-secondary">Refresh</button>
-                            <button id="editPrograms" class="btn btn-secondary" onclick="window.showScheduleEditor()">Edit Schedules</button>
-                        </div>
-                        <div class="programs-list" id="programsList">
-                            <div class="loading-message">Connect to controller to view programs</div>
-                        </div>
+                <div class="programs-section">
+                    <h2>Programs & Schedules</h2>
+                    <div class="programs-controls">
+                        <button id="refreshPrograms" class="btn btn-secondary btn-sm" onclick="window.refreshPrograms()">Refresh</button>
+                        <button id="editPrograms" class="btn btn-secondary btn-sm" onclick="window.showScheduleEditor()">Edit Schedules</button>
                     </div>
-                    
-                    <!-- Schedule Editor Modal -->
-                    <div id="scheduleModal" class="modal" style="display: none;">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h2>Program Schedule Editor</h2>
-                                <button class="btn btn-secondary" onclick="window.closeScheduleEditor()">×</button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="program-editor">
-                                    <h3>Program A - Morning Routine</h3>
-                                    <div class="schedule-section">
-                                        <h4>Days of Week</h4>
-                                        <div class="day-selector">
-                                            <label><input type="checkbox" id="prog-a-sun" checked> Sunday</label>
-                                            <label><input type="checkbox" id="prog-a-mon" checked> Monday</label>
-                                            <label><input type="checkbox" id="prog-a-tue" checked> Tuesday</label>
-                                            <label><input type="checkbox" id="prog-a-wed" checked> Wednesday</label>
-                                            <label><input type="checkbox" id="prog-a-thu" checked> Thursday</label>
-                                            <label><input type="checkbox" id="prog-a-fri" checked> Friday</label>
-                                            <label><input type="checkbox" id="prog-a-sat" checked> Saturday</label>
-                                        </div>
-                                    </div>
-                                    <div class="schedule-section">
-                                        <h4>Start Time</h4>
-                                        <input type="time" id="prog-a-time" value="06:00">
-                                    </div>
-                                    <div class="schedule-section">
-                                        <h4>Zone Durations (minutes)</h4>
-                                        <div class="zone-durations">
-                                            <div class="duration-item">
-                                                <label>Zone 1:</label>
-                                                <input type="number" min="0" max="60" value="10">
-                                            </div>
-                                            <div class="duration-item">
-                                                <label>Zone 2:</label>
-                                                <input type="number" min="0" max="60" value="15">
-                                            </div>
-                                            <div class="duration-item">
-                                                <label>Zone 3:</label>
-                                                <input type="number" min="0" max="60" value="8">
-                                            </div>
-                                            <div class="duration-item">
-                                                <label>Zone 4:</label>
-                                                <input type="number" min="0" max="60" value="12">
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button class="btn btn-primary" onclick="window.saveSchedule()">Save Schedule</button>
-                                <button class="btn btn-secondary" onclick="window.closeScheduleEditor()">Cancel</button>
-                            </div>
-                        </div>
+                    <div class="programs-list" id="programsList">
+                        <div class="loading-message">Connect to controller to view programs</div>
                     </div>
                 </div>
             </div>

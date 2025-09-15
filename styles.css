@@ -34,20 +34,183 @@ body {
     color: var(--gray-800);
 }
 
+/* Enhanced screen space utilization */
 .container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 16px;
 }
 
-/* Header */
+/* Compact header */
 header {
     background: white;
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-md);
-    padding: 24px;
-    margin-bottom: 24px;
+    padding: 16px 24px;
+    margin-bottom: 20px;
     display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+header h1 {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--gray-800);
+    margin: 0;
+}
+
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* System status - compact horizontal layout */
+.system-status {
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--border-radius);
+    padding: 16px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow-sm);
+}
+
+.system-status h3 {
+    font-size: 16px;
+    margin-bottom: 12px;
+    color: var(--gray-700);
+}
+
+.status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+/* Main content - better grid layout */
+.main-content {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+    align-items: start;
+}
+
+/* Zones grid layout */
+.zones-section {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    padding: 20px;
+}
+
+.zones-section h2 {
+    font-size: 18px;
+    margin-bottom: 16px;
+    color: var(--gray-700);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.zones-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+.zone-item {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--border-radius);
+    padding: 16px;
+    transition: all 0.2s ease;
+}
+
+.zone-item:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary-color);
+}
+
+.zone-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.zone-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--gray-800);
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.zone-name:hover {
+    background-color: var(--gray-100);
+}
+
+.zone-name-input {
+    font-size: 16px;
+    font-weight: 600;
+    border: 2px solid var(--primary-color);
+    border-radius: 4px;
+    padding: 4px 8px;
+    background: white;
+}
+
+/* Programs section - compact */
+.programs-section {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    padding: 20px;
+}
+
+.programs-section h2 {
+    font-size: 18px;
+    margin-bottom: 16px;
+    color: var(--gray-700);
+}
+
+.program-item {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--border-radius);
+    padding: 16px;
+    margin-bottom: 12px;
+}
+
+/* Rain delay controls - inline */
+.rain-delay-controls {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--border-radius);
+    padding: 12px;
+}
+
+.rain-delay-controls h4 {
+    font-size: 14px;
+    margin-bottom: 8px;
+    color: var(--gray-600);
+}
+
+.delay-buttons {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.delay-buttons button {
+    flex: 1;
+    min-width: 60px;
+    padding: 4px 8px;
+    font-size: 12px;
+}
     justify-content: space-between;
     align-items: center;
 }
