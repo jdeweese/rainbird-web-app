@@ -122,41 +122,101 @@
         };
         
         window.attemptConnection = function(ip, password) {
-            console.log('Attempting connection to:', ip);
+            console.log('🔌 Attempting connection to:', ip);
             const statusEl = document.getElementById('connectionStatus');
             statusEl.textContent = 'Connecting...';
             statusEl.className = 'connection-status connecting';
             
+            const requestData = {
+                url: `http://${ip}/stick`,
+                data: {"jsonrpc": "2.0", "method": "tunnelSip", "params": {"data": "02", "length": 1}, "id": 1},
+                encrypt: true,
+                password: password
+            };
+            
+            console.log('📤 Sending connection request:', requestData);
+            
             fetch('/proxy', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    url: `http://${ip}/stick`,
-                    data: {"jsonrpc": "2.0", "method": "tunnelSip", "params": {"data": "02", "length": 1}, "id": 1},
-                    encrypt: true,
-                    password: password
-                })
+                body: JSON.stringify(requestData)
             })
-            .then(response => response.json())
+            .then(response => {
+                console.log('📡 Proxy response status:', response.status);
+                return response.json();
+            })
             .then(result => {
-                console.log('Connection result:', result);
+                console.log('🔍 Connection result:', result);
+                
                 if (result.success) {
+                    console.log('✅ Connection successful!');
                     statusEl.textContent = 'Connected';
                     statusEl.className = 'connection-status connected';
                     document.getElementById('disconnectBtn').style.display = 'inline-block';
-                    setTimeout(() => window.loadControllerData(), 500);
+                    
+                    // Show success message
+                    showMessage('Connected to controller successfully!', 'success');
+                    
+                    // Load controller data
+                    setTimeout(() => {
+                        console.log('📊 Loading controller data...');
+                        window.loadControllerData();
+                    }, 500);
                 } else {
+                    console.log('❌ Connection failed:', result.error);
                     statusEl.textContent = 'Connection Failed';
                     statusEl.className = 'connection-status disconnected';
-                    console.error('Connection failed:', result.error);
+                    
+                    // Show specific error message
+                    const errorMsg = result.error || 'Unknown connection error';
+                    showMessage(`Connection failed: ${errorMsg}`, 'error');
                 }
             })
             .catch(error => {
-                console.error('Connection error:', error);
+                console.error('💥 Connection error:', error);
                 statusEl.textContent = 'Connection Failed';
                 statusEl.className = 'connection-status disconnected';
+                showMessage(`Connection error: ${error.message}`, 'error');
             });
         };
+        
+        // Enhanced message display function
+        function showMessage(message, type = 'info') {
+            console.log(`📢 Message (${type}):`, message);
+            
+            let messageEl = document.getElementById('messageDisplay');
+            if (!messageEl) {
+                messageEl = document.createElement('div');
+                messageEl.id = 'messageDisplay';
+                messageEl.style.cssText = `
+                    position: fixed;
+                    top: 80px;
+                    right: 20px;
+                    padding: 12px 20px;
+                    border-radius: 6px;
+                    z-index: 1001;
+                    max-width: 300px;
+                    font-weight: 500;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                `;
+                document.body.appendChild(messageEl);
+            }
+
+            const styles = {
+                success: 'background: #d4edda; color: #155724; border-left: 4px solid #28a745;',
+                error: 'background: #f8d7da; color: #721c24; border-left: 4px solid #dc3545;',
+                warning: 'background: #fff3cd; color: #856404; border-left: 4px solid #ffc107;',
+                info: 'background: #d1ecf1; color: #0c5460; border-left: 4px solid #17a2b8;'
+            };
+
+            messageEl.textContent = message;
+            messageEl.style.cssText += styles[type] || styles.info;
+            messageEl.style.display = 'block';
+
+            setTimeout(() => {
+                messageEl.style.display = 'none';
+            }, 5000);
+        }
         
         window.handleDisconnect = function() {
             document.getElementById('connectionStatus').textContent = 'Disconnected';
@@ -218,28 +278,50 @@
             }
         };
         
-        // Auto-connect on page load
+        // Auto-connect on page load - ENHANCED DEBUG VERSION
         window.addEventListener('load', function() {
+            console.log('🚀 Page loaded, starting auto-connect check...');
+            
             setTimeout(() => {
+                console.log('⏰ Auto-connect timeout triggered');
+                
                 fetch('/api/settings', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'load' })
                 })
-                .then(response => response.json())
+                .then(response => {
+                    console.log('📡 Settings response received:', response.status);
+                    return response.json();
+                })
                 .then(result => {
-                    console.log('Settings loaded:', result);
-                    if (result.success && result.settings && result.settings.controller_ip && result.settings.controller_password && result.settings.controller_password !== '****') {
-                        console.log('Auto-connecting with IP:', result.settings.controller_ip);
-                        window.attemptConnection(result.settings.controller_ip, result.settings.controller_password);
+                    console.log('⚙️ Settings loaded:', result);
+                    
+                    if (result.success && result.settings) {
+                        const settings = result.settings;
+                        const hasIP = settings.controller_ip && settings.controller_ip.trim();
+                        const hasPassword = settings.controller_password && settings.controller_password !== '****';
+                        
+                        console.log('🔍 Validation - IP:', hasIP, 'Password:', hasPassword);
+                        
+                        if (hasIP && hasPassword) {
+                            console.log('✅ Valid settings found, attempting auto-connect...');
+                            window.attemptConnection(settings.controller_ip, settings.controller_password);
+                        } else {
+                            console.log('❌ Invalid settings - IP or password missing/masked');
+                            document.getElementById('connectionStatus').textContent = 'Configure Settings';
+                            document.getElementById('connectionStatus').className = 'connection-status disconnected';
+                        }
                     } else {
-                        console.log('No valid settings for auto-connect - password masked or missing');
+                        console.log('❌ No settings found in response');
                         document.getElementById('connectionStatus').textContent = 'Configure Settings';
+                        document.getElementById('connectionStatus').className = 'connection-status disconnected';
                     }
                 })
                 .catch(error => {
-                    console.error('Failed to load settings:', error);
+                    console.error('💥 Settings load error:', error);
                     document.getElementById('connectionStatus').textContent = 'Configure Settings';
+                    document.getElementById('connectionStatus').className = 'connection-status disconnected';
                 });
             }, 1000);
         });

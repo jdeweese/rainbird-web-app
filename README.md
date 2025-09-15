@@ -2,41 +2,7 @@
 
 A modern web application to control your RainBird LNK WiFi irrigation controller, replicating the functionality of the official RainBird mobile app.
 
-## Features
-
-- **Zone Control**: Start/stop individual irrigation zones with custom duration
-- **Program Management**: Run predefined watering programs
-- **Real-time Status**: Monitor active zones, remaining time, and rain sensor status
-- **Responsive Design**: Works on desktop, tablet, and mobile devices
-- **Modern UI**: Clean, intuitive interface with real-time updates
-
-## Architecture
-
-The application is built with a modular architecture:
-
-### Backend (Python)
-- **`server.py`** - Main web server and API handler
-- **`lib/rainbird_controller.py`** - High-level controller interface
-- **`lib/rainbird_connection.py`** - Low-level HTTP/AES communication
-- **`lib/rainbird_protocol.py`** - Protocol command definitions
-- **`lib/data_formatter.py`** - Response data formatting
-
-### Frontend (JavaScript)
-- **`index.html`** - Main web interface
-- **`app.js`** - Application logic and UI management
-- **`rainbird-api.js`** - Client-side API interface
-- **`styles.css`** - Responsive styling
-
-## Setup Instructions
-
-### Prerequisites
-
-- RainBird LNK WiFi controller connected to your network
-- Python 3.7+ with `pycryptodome` library
-- Web browser with JavaScript enabled
-- Controller IP address and password
-
-### Installation
+## 🚀 Quick Start
 
 1. **Install dependencies**:
    ```bash
@@ -50,95 +16,59 @@ The application is built with a modular architecture:
 
 3. **Open your browser** to http://localhost:8000
 
-4. **Connect to your controller**:
-   - Enter controller IP address (e.g., 192.168.1.113)
-   - Enter controller password
-   - Click "Connect"
+4. **Configure settings**: Click ⚙️ Settings and enter your controller IP and password
 
-## Usage
+## 📋 Current Status
 
-### Connecting to Controller
+### ✅ Working Features
+- Settings modal with form validation
+- Test Connection functionality
+- Settings persistence to JSON file
+- Server proxy for controller communication
+- Responsive web interface
 
-1. Enter your controller's IP address
-2. Enter the controller password
-3. Click "Connect"
-4. Wait for connection confirmation
+### ❌ Known Issues
+- **Auto-connect on page load not working**
+- **Zone/program loading after connection broken**
+- **Connection status updates inconsistent**
+- **JavaScript function definitions fragile during refactoring**
 
-### Zone Control
+## 🏗️ Architecture
 
-- **Start Zone**: Select duration (1-60 minutes) and click "Start"
-- **Stop Zone**: Click "Stop" on any active zone
-- **Monitor**: View remaining time for active zones
+- **Backend**: Python server with JSON-RPC proxy
+- **Frontend**: Single-page HTML application with embedded JavaScript
+- **Communication**: AES-encrypted HTTP requests to RainBird controller
+- **Settings**: Persistent storage in `controller_settings.json`
 
-### System Status
+## 🧪 Testing
 
-- **Rain Sensor**: Shows if rain sensor is active/inactive
-- **Current Zone**: Displays currently running zone
-- **Time Remaining**: Shows time left for active zone
+- **Test Harness**: http://localhost:8000/test-harness.html
+- **Manual Testing**: Use browser console for debugging
+- **Quick Test**: http://localhost:8000/quick-test.html
 
-## Technical Details
+## 👥 Development Team
 
-### Protocol Implementation
+This project uses a persona-based development approach:
+- **Version Controller**: Git management and version control
+- **Testor**: Quality assurance and user testing
+- **UX Designer**: Interface design and user experience
+- **Business User**: Domain expertise and requirements
+- **Documentor**: Documentation and knowledge management
 
-The app uses the RainBird LNK controller's JSON-RPC API over HTTP:
+## 📖 Documentation
 
-- **Protocol**: HTTP POST requests to `/stick` endpoint
-- **Encryption**: AES encryption with SHA256 key derivation
-- **Format**: JSON-RPC 2.0 with encrypted payload
+- `PROJECT_KNOWLEDGE.md` - Technical knowledge base and lessons learned
+- `PERSONAS.md` - Development team persona definitions
+- `README.md` - This file with project overview
 
-### Supported Commands
+## 🔧 Development
 
-- `ModelAndVersionRequest` - Get controller information
-- `AvailableStationsRequest` - Retrieve zone configuration
-- `CurrentIrrigationStateRequest` - Get current system status
-- `ManuallyRunStationRequest` - Start watering a specific zone
-- `StopIrrigationRequest` - Stop all active zones
-- `CurrentRainSensorStateRequest` - Check rain sensor status
+See `PROJECT_KNOWLEDGE.md` for detailed technical information, known issues, and development patterns.
 
-## Development
-
-### File Structure
-
-```
-rainbird-web-app/
-├── server.py              # Main web server
-├── lib/                   # Backend library modules
-│   ├── __init__.py
-│   ├── rainbird_controller.py    # High-level interface
-│   ├── rainbird_connection.py    # HTTP/AES communication
-│   ├── rainbird_protocol.py      # Protocol definitions
-│   └── data_formatter.py         # Response formatting
-├── index.html             # Main HTML interface
-├── app.js                 # Frontend application logic
-├── rainbird-api.js        # Client-side API
-├── styles.css             # Styling
-├── start-server.sh        # Server startup script
-└── server-config.json     # Server configuration
-```
-
-### Server Management
-
-```bash
-# Start server
-./start-server.sh
-
-# Stop server
-pkill -f "python3.*server.py"
-
-# View logs
-tail -f server.out
-```
-
-## Security Notes
-
-- **Local Network Only**: This app is designed for local network use
-- **Password Storage**: Passwords are not stored permanently
-- **AES Encryption**: Uses proper AES encryption for secure communication
-
-## License
+## 📄 License
 
 This project is open source and available under the MIT License.
 
-## Disclaimer
+## ⚠️ Disclaimer
 
 This is an unofficial application. RainBird is a trademark of Rain Bird Corporation. This project is not affiliated with or endorsed by Rain Bird Corporation.
