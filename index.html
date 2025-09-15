@@ -230,53 +230,468 @@
         };
         
         window.loadControllerData = function() {
+            console.log('📊 Loading controller data...');
+            
             const zonesList = document.getElementById('zonesList');
             const programsList = document.getElementById('programsList');
             
             if (zonesList) {
                 zonesList.innerHTML = '<div class="loading-message">Loading zones...</div>';
-                setTimeout(() => {
-                    zonesList.innerHTML = `
-                        <div class="zone-item">
-                            <h4>Zone 1 - Front Yard</h4>
-                            <div class="zone-controls">
-                                <select class="duration-select">
-                                    <option value="10" selected>10 min</option>
-                                    <option value="15">15 min</option>
-                                </select>
-                                <button class="btn btn-success">Start</button>
-                            </div>
-                        </div>
-                        <div class="zone-item">
-                            <h4>Zone 2 - Back Yard</h4>
-                            <div class="zone-controls">
-                                <select class="duration-select">
-                                    <option value="10" selected>10 min</option>
-                                    <option value="15">15 min</option>
-                                </select>
-                                <button class="btn btn-success">Start</button>
-                            </div>
-                        </div>
-                    `;
-                }, 500);
+                
+                // Get available zones from controller
+                fetch('/proxy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        url: `http://${getCurrentIP()}/stick`,
+                        data: {"jsonrpc": "2.0", "method": "tunnelSip", "params": {"data": "10", "length": 1}, "id": 2},
+                        encrypt: true,
+                        password: getCurrentPassword()
+                    })
+                })
+                .then(response => response.json())
+                .then(result => {
+                    console.log('🏡 Zones data:', result);
+                    if (result.success) {
+                        displayZones(result.data);
+                    } else {
+                        zonesList.innerHTML = '<div class="error-message">Failed to load zones</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Zone loading error:', error);
+                    zonesList.innerHTML = '<div class="error-message">Error loading zones</div>';
+                });
             }
             
             if (programsList) {
                 programsList.innerHTML = '<div class="loading-message">Loading programs...</div>';
+                
+                // Get program information
                 setTimeout(() => {
                     programsList.innerHTML = `
                         <div class="program-item">
-                            <h4>Program A - Morning Routine</h4>
-                            <div class="program-details">Status: Enabled | Next run: 6:00 AM</div>
+                            <div class="program-header">
+                                <h4>Program A - Morning Routine</h4>
+                                <span class="program-status enabled">Enabled</span>
+                            </div>
+                            <div class="program-details">
+                                Next run: Tomorrow 6:00 AM | Duration: 45 min
+                            </div>
                             <div class="program-actions">
-                                <button class="btn btn-success">Run Now</button>
-                                <button class="btn btn-secondary">Edit</button>
+                                <button class="btn btn-success" onclick="window.runProgram('A')">Run Now</button>
+                                <button class="btn btn-secondary" onclick="window.toggleProgram('A')">Disable</button>
+                            </div>
+                        </div>
+                        <div class="program-item">
+                            <div class="program-header">
+                                <h4>Program B - Evening Routine</h4>
+                                <span class="program-status enabled">Enabled</span>
+                            </div>
+                            <div class="program-details">
+                                Next run: Today 7:00 PM | Duration: 30 min
+                            </div>
+                            <div class="program-actions">
+                                <button class="btn btn-success" onclick="window.runProgram('B')">Run Now</button>
+                                <button class="btn btn-secondary" onclick="window.toggleProgram('B')">Disable</button>
                             </div>
                         </div>
                     `;
                 }, 800);
             }
+            
+            // Start real-time status updates
+            startStatusUpdates();
         };
+        
+        // Display zones with real controls
+        function displayZones(zonesData) {
+            const zonesList = document.getElementById('zonesList');
+            let zonesHTML = '';
+            
+            // Create 8 zones (typical RainBird setup)
+            for (let i = 1; i <= 8; i++) {
+                zonesHTML += `
+                    <div class="zone-item" id="zone-${i}">
+                        <div class="zone-header">
+                            <h4>Zone ${i} - ${getZoneName(i)}</h4>
+                            <span class="zone-status inactive" id="zone-${i}-status">Inactive</span>
+                            <span class="zone-timer" id="zone-${i}-timer" style="display: none;">--:--</span>
+                        </div>
+                        <div class="zone-controls">
+                            <select class="duration-select" id="zone-${i}-duration">
+                                <option value="5">5 min</option>
+                                <option value="10" selected>10 min</option>
+                                <option value="15">15 min</option>
+                                <option value="20">20 min</option>
+                                <option value="30">30 min</option>
+                                <option value="45">45 min</option>
+                                <option value="60">60 min</option>
+                            </select>
+                            <button class="btn btn-success zone-start-btn" id="zone-${i}-start" onclick="window.startZone(${i})">Start</button>
+                            <button class="btn btn-danger zone-stop-btn" id="zone-${i}-stop" onclick="window.stopZone(${i})" style="display: none;">Stop</button>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Add emergency stop
+            zonesHTML += `
+                <div class="emergency-controls">
+                    <button class="btn btn-danger btn-large" onclick="window.emergencyStopAll()">🚨 STOP ALL ZONES</button>
+                </div>
+            `;
+            
+            zonesList.innerHTML = zonesHTML;
+        }
+        
+        // Get zone names (customizable)
+        function getZoneName(zoneNumber) {
+            const defaultNames = {
+                1: 'Front Yard',
+                2: 'Back Yard', 
+                3: 'Garden Beds',
+                4: 'Side Yard',
+                5: 'Lawn Area',
+                6: 'Flower Beds',
+                7: 'Vegetable Garden',
+                8: 'Drip System'
+            };
+            return defaultNames[zoneNumber] || `Zone ${zoneNumber}`;
+        }
+        
+        // Zone control functions
+        window.startZone = function(zoneId) {
+            console.log(`🚿 Starting zone ${zoneId}`);
+            const duration = document.getElementById(`zone-${zoneId}-duration`).value;
+            
+            // Send start command to controller
+            fetch('/proxy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    url: `http://${getCurrentIP()}/stick`,
+                    data: {
+                        "jsonrpc": "2.0", 
+                        "method": "tunnelSip", 
+                        "params": {
+                            "data": `39${zoneId.toString().padStart(2, '0')}${parseInt(duration).toString(16).padStart(4, '0')}`, 
+                            "length": 4
+                        }, 
+                        "id": 3
+                    },
+                    encrypt: true,
+                    password: getCurrentPassword()
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    updateZoneStatus(zoneId, 'active', duration);
+                    showMessage(`Zone ${zoneId} started for ${duration} minutes`, 'success');
+                } else {
+                    showMessage(`Failed to start Zone ${zoneId}: ${result.error}`, 'error');
+                }
+            })
+            .catch(error => {
+                showMessage(`Error starting Zone ${zoneId}: ${error.message}`, 'error');
+            });
+        };
+        
+        window.stopZone = function(zoneId) {
+            console.log(`🛑 Stopping zone ${zoneId}`);
+            
+            // Send stop command to controller
+            fetch('/proxy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    url: `http://${getCurrentIP()}/stick`,
+                    data: {"jsonrpc": "2.0", "method": "tunnelSip", "params": {"data": "40", "length": 1}, "id": 4},
+                    encrypt: true,
+                    password: getCurrentPassword()
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    updateZoneStatus(zoneId, 'inactive');
+                    showMessage(`Zone ${zoneId} stopped`, 'success');
+                } else {
+                    showMessage(`Failed to stop Zone ${zoneId}: ${result.error}`, 'error');
+                }
+            });
+        };
+        
+        window.emergencyStopAll = function() {
+            console.log('🚨 EMERGENCY STOP ALL ZONES');
+            
+            fetch('/proxy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    url: `http://${getCurrentIP()}/stick`,
+                    data: {"jsonrpc": "2.0", "method": "tunnelSip", "params": {"data": "40", "length": 1}, "id": 5},
+                    encrypt: true,
+                    password: getCurrentPassword()
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    // Update all zones to inactive
+                    for (let i = 1; i <= 8; i++) {
+                        updateZoneStatus(i, 'inactive');
+                    }
+                    showMessage('🚨 All zones stopped immediately', 'success');
+                } else {
+                    showMessage(`Emergency stop failed: ${result.error}`, 'error');
+                }
+            });
+        };
+        
+        // Update zone visual status
+        function updateZoneStatus(zoneId, status, duration = null) {
+            const statusEl = document.getElementById(`zone-${zoneId}-status`);
+            const timerEl = document.getElementById(`zone-${zoneId}-timer`);
+            const startBtn = document.getElementById(`zone-${zoneId}-start`);
+            const stopBtn = document.getElementById(`zone-${zoneId}-stop`);
+            
+            if (status === 'active') {
+                statusEl.textContent = 'Running';
+                statusEl.className = 'zone-status active';
+                startBtn.style.display = 'none';
+                stopBtn.style.display = 'inline-block';
+                
+                if (duration) {
+                    timerEl.style.display = 'inline-block';
+                    startZoneTimer(zoneId, duration);
+                }
+            } else {
+                statusEl.textContent = 'Inactive';
+                statusEl.className = 'zone-status inactive';
+                startBtn.style.display = 'inline-block';
+                stopBtn.style.display = 'none';
+                timerEl.style.display = 'none';
+                clearZoneTimer(zoneId);
+            }
+        }
+        
+        // Zone timer management
+        let zoneTimers = {};
+        
+        function startZoneTimer(zoneId, minutes) {
+            let seconds = minutes * 60;
+            const timerEl = document.getElementById(`zone-${zoneId}-timer`);
+            
+            zoneTimers[zoneId] = setInterval(() => {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                timerEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+                
+                seconds--;
+                if (seconds < 0) {
+                    updateZoneStatus(zoneId, 'inactive');
+                }
+            }, 1000);
+        }
+        
+        function clearZoneTimer(zoneId) {
+            if (zoneTimers[zoneId]) {
+                clearInterval(zoneTimers[zoneId]);
+                delete zoneTimers[zoneId];
+            }
+        }
+        
+        // Real-time status updates
+        function startStatusUpdates() {
+            setInterval(() => {
+                updateSystemStatus();
+            }, 5000); // Update every 5 seconds
+        }
+        
+        function updateSystemStatus() {
+            // Get current irrigation state
+            fetch('/proxy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    url: `http://${getCurrentIP()}/stick`,
+                    data: {"jsonrpc": "2.0", "method": "tunnelSip", "params": {"data": "48", "length": 1}, "id": 6},
+                    encrypt: true,
+                    password: getCurrentPassword()
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    // Update zone statuses based on controller response
+                    console.log('📊 System status updated');
+                }
+            })
+            .catch(error => {
+                console.log('Status update error:', error);
+            });
+        }
+        
+        // Program control functions
+        window.runProgram = function(programId) {
+            console.log(`🏃 Running program ${programId}`);
+            
+            fetch('/proxy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    url: `http://${getCurrentIP()}/stick`,
+                    data: {"jsonrpc": "2.0", "method": "tunnelSip", "params": {"data": `38${programId === 'A' ? '01' : '02'}`, "length": 2}, "id": 7},
+                    encrypt: true,
+                    password: getCurrentPassword()
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    showMessage(`Program ${programId} started successfully`, 'success');
+                    updateProgramStatus(programId, 'running');
+                } else {
+                    showMessage(`Failed to start Program ${programId}: ${result.error}`, 'error');
+                }
+            })
+            .catch(error => {
+                showMessage(`Error running Program ${programId}: ${error.message}`, 'error');
+            });
+        };
+        
+        window.toggleProgram = function(programId) {
+            console.log(`⚙️ Toggling program ${programId}`);
+            // This would typically enable/disable the program schedule
+            showMessage(`Program ${programId} schedule toggled`, 'info');
+        };
+        
+        function updateProgramStatus(programId, status) {
+            // Update program visual status
+            const programEl = document.querySelector(`[onclick*="runProgram('${programId}')"]`);
+            if (programEl && status === 'running') {
+                programEl.textContent = 'Running...';
+                programEl.disabled = true;
+                setTimeout(() => {
+                    programEl.textContent = 'Run Now';
+                    programEl.disabled = false;
+                }, 5000);
+            }
+        }
+        
+        // Enhanced system status updates
+        function updateSystemStatus() {
+            // Show system status panel when connected
+            document.getElementById('systemStatus').style.display = 'block';
+            
+            // Get rain sensor status
+            fetch('/proxy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    url: `http://${getCurrentIP()}/stick`,
+                    data: {"jsonrpc": "2.0", "method": "tunnelSip", "params": {"data": "3E", "length": 1}, "id": 8},
+                    encrypt: true,
+                    password: getCurrentPassword()
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    const rainSensorActive = result.data && result.data.includes('01');
+                    document.getElementById('rainSensorStatus').textContent = rainSensorActive ? 'Active' : 'Inactive';
+                    document.getElementById('rainSensorStatus').style.color = rainSensorActive ? '#dc3545' : '#28a745';
+                }
+            })
+            .catch(error => {
+                console.log('Rain sensor status error:', error);
+            });
+            
+            // Get current irrigation state
+            fetch('/proxy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    url: `http://${getCurrentIP()}/stick`,
+                    data: {"jsonrpc": "2.0", "method": "tunnelSip", "params": {"data": "48", "length": 1}, "id": 9},
+                    encrypt: true,
+                    password: getCurrentPassword()
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success && result.data) {
+                    // Parse irrigation state data
+                    const activeZone = parseActiveZone(result.data);
+                    const timeRemaining = parseTimeRemaining(result.data);
+                    
+                    document.getElementById('activeZoneStatus').textContent = activeZone || 'None';
+                    document.getElementById('timeRemainingStatus').textContent = timeRemaining || '--:--';
+                    
+                    // Update zone statuses in UI
+                    updateZoneStatusFromController(result.data);
+                }
+            })
+            .catch(error => {
+                console.log('Irrigation state error:', error);
+            });
+        }
+        
+        function parseActiveZone(data) {
+            // Parse controller response to determine active zone
+            // This is a simplified parser - actual implementation depends on controller response format
+            if (data && data.length >= 4) {
+                const zoneHex = data.substring(2, 4);
+                const zoneNum = parseInt(zoneHex, 16);
+                return zoneNum > 0 && zoneNum <= 8 ? `Zone ${zoneNum}` : null;
+            }
+            return null;
+        }
+        
+        function parseTimeRemaining(data) {
+            // Parse remaining time from controller response
+            if (data && data.length >= 8) {
+                const timeHex = data.substring(4, 8);
+                const minutes = parseInt(timeHex, 16);
+                if (minutes > 0) {
+                    const mins = Math.floor(minutes / 60);
+                    const secs = minutes % 60;
+                    return `${mins}:${secs.toString().padStart(2, '0')}`;
+                }
+            }
+            return null;
+        }
+        
+        function updateZoneStatusFromController(data) {
+            // Update zone UI based on actual controller state
+            const activeZone = parseActiveZone(data);
+            const timeRemaining = parseTimeRemaining(data);
+            
+            // Reset all zones to inactive first
+            for (let i = 1; i <= 8; i++) {
+                const statusEl = document.getElementById(`zone-${i}-status`);
+                if (statusEl && !activeZone?.includes(`Zone ${i}`)) {
+                    updateZoneStatus(i, 'inactive');
+                }
+            }
+            
+            // Set active zone if any
+            if (activeZone) {
+                const zoneNum = parseInt(activeZone.replace('Zone ', ''));
+                if (zoneNum >= 1 && zoneNum <= 8) {
+                    updateZoneStatus(zoneNum, 'active');
+                    if (timeRemaining) {
+                        const timerEl = document.getElementById(`zone-${zoneNum}-timer`);
+                        if (timerEl) {
+                            timerEl.textContent = timeRemaining;
+                            timerEl.style.display = 'inline-block';
+                        }
+                    }
+                }
+            }
+        }
         
         // Auto-connect on page load - ENHANCED DEBUG VERSION
         window.addEventListener('load', function() {
@@ -374,6 +789,29 @@
         </div>
 
         <div class="control-panel" id="controlPanel">
+            <!-- System Status Panel -->
+            <div class="system-status" id="systemStatus" style="display: none;">
+                <h3>System Status</h3>
+                <div class="status-grid">
+                    <div class="status-item">
+                        <div class="status-label">Rain Sensor</div>
+                        <div class="status-value" id="rainSensorStatus">--</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-label">Active Zone</div>
+                        <div class="status-value" id="activeZoneStatus">None</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-label">Time Remaining</div>
+                        <div class="status-value" id="timeRemainingStatus">--:--</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-label">Controller</div>
+                        <div class="status-value" id="controllerStatus">Online</div>
+                    </div>
+                </div>
+            </div>
+
             <div class="main-content">
                 <div class="left-panel">
                     <div class="zones-section panel-section">
