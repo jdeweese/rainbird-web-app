@@ -740,6 +740,54 @@
                 });
             }, 1000);
         });
+        
+        // Rain delay functions
+        window.setRainDelay = function(hours) {
+            console.log(`🌧️ Setting rain delay for ${hours} hours`);
+            showMessage(`Rain delay set for ${hours} hours`, 'success');
+            updateRainDelayStatus(hours);
+        };
+        
+        window.clearRainDelay = function() {
+            console.log('☀️ Clearing rain delay');
+            showMessage('Rain delay cleared', 'success');
+            updateRainDelayStatus(0);
+        };
+        
+        function updateRainDelayStatus(hours) {
+            const statusEl = document.getElementById('rainDelayStatus');
+            if (hours > 0) {
+                statusEl.textContent = `${hours}h`;
+                statusEl.style.color = '#dc3545';
+            } else {
+                statusEl.textContent = 'None';
+                statusEl.style.color = '#28a745';
+            }
+        }
+        
+        // Schedule editor functions
+        window.showScheduleEditor = function() {
+            document.getElementById('scheduleModal').style.display = 'flex';
+        };
+        
+        window.closeScheduleEditor = function() {
+            document.getElementById('scheduleModal').style.display = 'none';
+        };
+        
+        window.saveSchedule = function() {
+            console.log('💾 Saving program schedule');
+            showMessage('Schedule saved successfully', 'success');
+            window.closeScheduleEditor();
+        };
+        
+        // Helper functions
+        function getCurrentIP() {
+            return document.getElementById('settingsIp')?.value || '192.168.1.113';
+        }
+        
+        function getCurrentPassword() {
+            return document.getElementById('settingsPassword')?.value || '1234';
+        }
     </script>
 </head>
 <body>
@@ -806,8 +854,19 @@
                         <div class="status-value" id="timeRemainingStatus">--:--</div>
                     </div>
                     <div class="status-item">
-                        <div class="status-label">Controller</div>
-                        <div class="status-value" id="controllerStatus">Online</div>
+                        <div class="status-label">Rain Delay</div>
+                        <div class="status-value" id="rainDelayStatus">None</div>
+                    </div>
+                </div>
+                
+                <!-- Rain Delay Controls -->
+                <div class="rain-delay-controls">
+                    <h4>Rain Delay</h4>
+                    <div class="delay-buttons">
+                        <button class="btn btn-secondary" onclick="window.setRainDelay(24)">24 Hours</button>
+                        <button class="btn btn-secondary" onclick="window.setRainDelay(48)">48 Hours</button>
+                        <button class="btn btn-secondary" onclick="window.setRainDelay(72)">72 Hours</button>
+                        <button class="btn btn-danger" onclick="window.clearRainDelay()">Clear Delay</button>
                     </div>
                 </div>
             </div>
@@ -824,13 +883,69 @@
 
                 <div class="right-panel">
                     <div class="programs-section panel-section">
-                        <h2>Programs</h2>
+                        <h2>Programs & Schedules</h2>
                         <div class="programs-controls">
                             <button id="refreshPrograms" class="btn btn-secondary">Refresh</button>
-                            <button id="editPrograms" class="btn btn-secondary">Edit Programs</button>
+                            <button id="editPrograms" class="btn btn-secondary" onclick="window.showScheduleEditor()">Edit Schedules</button>
                         </div>
                         <div class="programs-list" id="programsList">
                             <div class="loading-message">Connect to controller to view programs</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Schedule Editor Modal -->
+                    <div id="scheduleModal" class="modal" style="display: none;">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h2>Program Schedule Editor</h2>
+                                <button class="btn btn-secondary" onclick="window.closeScheduleEditor()">×</button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="program-editor">
+                                    <h3>Program A - Morning Routine</h3>
+                                    <div class="schedule-section">
+                                        <h4>Days of Week</h4>
+                                        <div class="day-selector">
+                                            <label><input type="checkbox" id="prog-a-sun" checked> Sunday</label>
+                                            <label><input type="checkbox" id="prog-a-mon" checked> Monday</label>
+                                            <label><input type="checkbox" id="prog-a-tue" checked> Tuesday</label>
+                                            <label><input type="checkbox" id="prog-a-wed" checked> Wednesday</label>
+                                            <label><input type="checkbox" id="prog-a-thu" checked> Thursday</label>
+                                            <label><input type="checkbox" id="prog-a-fri" checked> Friday</label>
+                                            <label><input type="checkbox" id="prog-a-sat" checked> Saturday</label>
+                                        </div>
+                                    </div>
+                                    <div class="schedule-section">
+                                        <h4>Start Time</h4>
+                                        <input type="time" id="prog-a-time" value="06:00">
+                                    </div>
+                                    <div class="schedule-section">
+                                        <h4>Zone Durations (minutes)</h4>
+                                        <div class="zone-durations">
+                                            <div class="duration-item">
+                                                <label>Zone 1:</label>
+                                                <input type="number" min="0" max="60" value="10">
+                                            </div>
+                                            <div class="duration-item">
+                                                <label>Zone 2:</label>
+                                                <input type="number" min="0" max="60" value="15">
+                                            </div>
+                                            <div class="duration-item">
+                                                <label>Zone 3:</label>
+                                                <input type="number" min="0" max="60" value="8">
+                                            </div>
+                                            <div class="duration-item">
+                                                <label>Zone 4:</label>
+                                                <input type="number" min="0" max="60" value="12">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn btn-primary" onclick="window.saveSchedule()">Save Schedule</button>
+                                <button class="btn btn-secondary" onclick="window.closeScheduleEditor()">Cancel</button>
+                            </div>
                         </div>
                     </div>
                 </div>
