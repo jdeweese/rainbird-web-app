@@ -8,7 +8,7 @@ import json
 import asyncio
 import sys
 import aiohttp
-from datetime import datetime, date, time
+from datetime import datetime, date, time, timedelta
 from pyrainbird import async_client
 
 class RainBirdCLI:
@@ -44,13 +44,18 @@ class RainBirdCLI:
             # Get detailed controller info
             model_info = await self.controller.get_model_and_version()
             serial = await self.controller.get_serial_number()
-            firmware = await self.controller.get_controller_firmware_version()
             
             print(f"✅ Connected to RainBird Controller!")
             print(f"   📱 Model: {model_info.model_name} ({model_info.model})")
-            print(f"   🔢 Version: {model_info.version}")
+            print(f"   🔢 Version: {model_info.major}.{model_info.minor}")
             print(f"   🆔 Serial: {serial}")
-            print(f"   💾 Firmware: {firmware.version}")
+            
+            try:
+                firmware = await self.controller.get_controller_firmware_version()
+                print(f"   💾 Firmware: {firmware.version}")
+            except:
+                print(f"   💾 Firmware: Not available")
+            
             return True
             
         except Exception as e:
@@ -141,8 +146,10 @@ class RainBirdCLI:
             if zone_states.states[zone_id-1]:
                 print(f"✅ Zone {zone_id} is now running!")
                 print(f"   ⏱️  Duration: {duration_minutes} minutes")
-                print(f"   🕐 Started: {datetime.now().strftime('%I:%M %p')}")
-                print(f"   🏁 Will stop: {(datetime.now().replace(second=0, microsecond=0) + asyncio.get_event_loop().time().__class__(minutes=duration_minutes)).strftime('%I:%M %p')}")
+                start_time = datetime.now()
+                end_time = start_time + timedelta(minutes=duration_minutes)
+                print(f"   🕐 Started: {start_time.strftime('%I:%M %p')}")
+                print(f"   🏁 Will stop: {end_time.strftime('%I:%M %p')}")
             else:
                 print(f"⚠️  Zone {zone_id} command sent but may not be running")
                 
@@ -159,15 +166,22 @@ class RainBirdCLI:
             print("🛑 Stopping all irrigation...")
             await self.controller.stop_irrigation()
             
-            # Verify it stopped
-            await asyncio.sleep(2)
+            # Verify it stopped (wait a bit longer)
+            await asyncio.sleep(3)
             irrigation_active = await self.controller.get_current_irrigation()
+            zone_states = await self.controller.get_zone_states()
             
-            if not irrigation_active:
+            # Check if any zones are still running
+            running_zones = [i+1 for i, state in enumerate(zone_states.states) if state]
+            
+            if not irrigation_active and not running_zones:
                 print(f"✅ All irrigation stopped successfully")
                 print(f"   🕐 Stopped at: {datetime.now().strftime('%I:%M %p')}")
+            elif not running_zones:
+                print(f"✅ All zones stopped (system may show active briefly)")
+                print(f"   🕐 Stopped at: {datetime.now().strftime('%I:%M %p')}")
             else:
-                print(f"⚠️  Stop command sent but irrigation may still be active")
+                print(f"⚠️  Some zones may still be running: {running_zones}")
                 
         except Exception as e:
             print(f"❌ Failed to stop irrigation: {e}")
@@ -235,6 +249,21 @@ class RainBirdCLI:
             
         except Exception as e:
             print(f"❌ Failed to get settings: {e}")
+    
+    async def run_program(self, program_id):
+        """Run a program"""
+        if not self.controller:
+            print("❌ Not connected to controller")
+            return
+        
+        try:
+            print(f"🏃 Running Program {program_id}...")
+            await self.controller.set_program(program_id)
+            print(f"✅ Program {program_id} started successfully")
+            print(f"   📋 Program will run according to its schedule")
+            print(f"   🕐 Started at: {datetime.now().strftime('%I:%M %p')}")
+        except Exception as e:
+            print(f"❌ Failed to run program: {e}")
     
     async def test_zone(self, zone_id):
         """Test a zone (short duration)"""
@@ -346,7 +375,15 @@ class RainBirdCLI:
                 elif choice == '8':
                     await self.get_programs()
                 elif choice == '9':
-                    print("🚧 Program execution coming soon...")
+                    program_id = input("🎯 Enter program number (1-4): ").strip()
+                    try:
+                        prog_num = int(program_id)
+                        if 1 <= prog_num <= 4:
+                            await self.run_program(prog_num)
+                        else:
+                            print("❌ Program must be 1-4")
+                    except ValueError:
+                        print("❌ Please enter a valid program number")
                 elif choice == '10':
                     days = input("🌧️  Enter rain delay days (1-7): ").strip()
                     try:
