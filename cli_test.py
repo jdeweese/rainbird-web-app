@@ -187,7 +187,7 @@ class RainBirdCLI:
             print(f"❌ Failed to stop irrigation: {e}")
     
     async def get_programs(self):
-        """Get program information"""
+        """Get program information with ESP-ME3 limitations"""
         if not self.controller:
             print("❌ Not connected to controller")
             return
@@ -196,10 +196,21 @@ class RainBirdCLI:
             print("📋 Getting program information...")
             program_info = await self.controller.get_program_info()
             schedule = await self.controller.get_schedule()
+            settings = await self.controller.get_settings()
             
-            print(f"✅ Program Information:")
-            print(f"   📊 Programs available: {len(schedule.programs) if hasattr(schedule, 'programs') else 'Unknown'}")
-            print(f"   📅 Schedule active: {'Yes' if hasattr(schedule, 'enabled') and schedule.enabled else 'Unknown'}")
+            print(f"✅ Controller Program Capabilities:")
+            print(f"   📊 Number of programs: {getattr(settings, 'num_programs', 'Unknown')}")
+            print(f"   🌱 Soil types: {[str(soil) for soil in program_info.soil_types if soil.value != 0]}")
+            print(f"   💧 Flow rates: {program_info.flow_rates}")
+            
+            if schedule.programs:
+                print(f"   📅 Stored programs: {len(schedule.programs)}")
+                for i, program in enumerate(schedule.programs, 1):
+                    print(f"      Program {i}: {program}")
+            else:
+                print(f"   ⚠️  No stored programs found")
+                print(f"   💡 ESP-ME3 is a basic controller focused on manual zone control")
+                print(f"   💡 Use zone control features for irrigation management")
             
         except Exception as e:
             print(f"❌ Failed to get programs: {e}")
@@ -251,17 +262,29 @@ class RainBirdCLI:
             print(f"❌ Failed to get settings: {e}")
     
     async def run_program(self, program_id):
-        """Run a program"""
+        """Run a program with ESP-ME3 limitations"""
         if not self.controller:
             print("❌ Not connected to controller")
             return
         
         try:
-            print(f"🏃 Running Program {program_id}...")
+            print(f"🏃 Attempting to run Program {program_id}...")
             await self.controller.set_program(program_id)
-            print(f"✅ Program {program_id} started successfully")
-            print(f"   📋 Program will run according to its schedule")
-            print(f"   🕐 Started at: {datetime.now().strftime('%I:%M %p')}")
+            
+            # Check if anything actually happened
+            await asyncio.sleep(3)
+            irrigation_status = await self.controller.get_current_irrigation()
+            zone_states = await self.controller.get_zone_states()
+            running_zones = [i+1 for i, state in enumerate(zone_states.states[:19]) if state]
+            
+            if running_zones:
+                print(f"✅ Program {program_id} started zones: {running_zones}")
+                print(f"   🕐 Started at: {datetime.now().strftime('%I:%M %p')}")
+            else:
+                print(f"⚠️  Program {program_id} command sent but no zones started")
+                print(f"   💡 ESP-ME3 may not have stored programs")
+                print(f"   💡 Use manual zone control instead (options 5-6)")
+                
         except Exception as e:
             print(f"❌ Failed to run program: {e}")
     
