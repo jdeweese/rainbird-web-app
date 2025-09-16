@@ -1,0 +1,5 @@
+{
+  "controller_ip": "192.168.1.113",
+  "controller_password": "1234",
+  "timeout": 10
+}
