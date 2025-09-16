@@ -306,17 +306,44 @@
             startStatusUpdates();
         };
         
-        // Display zones with real controls and editable names - FIXED
+        // Display zones with real controls and editable names - PARSE REAL ZONE COUNT
         function displayZones(zonesData) {
             const zonesList = document.getElementById('zonesList');
             
-            // Parse real zones data from controller
-            let availableZones = 8; // Default, will be updated from real data
+            // Parse REAL zone count from controller
+            let availableZones = 8; // Default fallback
+            
             if (zonesData && zonesData.result && zonesData.result.data) {
                 const data = zonesData.result.data;
                 console.log('Real zones data from controller:', data);
+                
+                // Parse RainBird zone availability response
+                // Format: 90 + zone mask data
+                if (data.startsWith('90')) {
+                    // Parse zone availability from hex data
+                    const zoneMask = data.substring(2); // Remove '90' prefix
+                    console.log('Zone mask data:', zoneMask);
+                    
+                    // Convert hex to binary to count available zones
+                    let zoneCount = 0;
+                    for (let i = 0; i < zoneMask.length; i += 2) {
+                        const byte = parseInt(zoneMask.substring(i, i + 2), 16);
+                        // Count bits set in each byte (each bit represents a zone)
+                        for (let bit = 0; bit < 8; bit++) {
+                            if (byte & (1 << bit)) {
+                                zoneCount = Math.max(zoneCount, (i/2) * 8 + bit + 1);
+                            }
+                        }
+                    }
+                    
+                    if (zoneCount > 0) {
+                        availableZones = zoneCount;
+                        console.log(`Controller has ${availableZones} zones available`);
+                    }
+                }
             }
             
+            console.log(`Displaying ${availableZones} zones`);
             let zonesHTML = '';
             
             // Create zones based on real controller data
@@ -439,15 +466,31 @@
             input.select();
         };
         
-        // Zone control functions - VERIFIED REAL CONTROLLER COMMANDS
+        // Zone control functions - FIXED FOR WEBPAGE EXECUTION
         window.startZone = function(zoneId) {
-            console.log(`🚿 Starting zone ${zoneId} on REAL controller`);
+            console.log(`🚿 WEBPAGE: Starting zone ${zoneId} on REAL controller`);
+            
             const durationInput = document.getElementById(`zone-${zoneId}-duration`);
+            if (!durationInput) {
+                console.error(`Duration input not found for zone ${zoneId}`);
+                showMessage(`Error: Zone ${zoneId} controls not found`, 'error');
+                return;
+            }
+            
             const duration = parseInt(durationInput.value) || 10;
             
             // Validate duration
             if (duration < 1 || duration > 60) {
                 showMessage('Duration must be between 1 and 60 minutes', 'error');
+                return;
+            }
+            
+            // Get current settings for IP and password
+            const currentIP = getCurrentIP();
+            const currentPassword = getCurrentPassword();
+            
+            if (!currentIP || !currentPassword) {
+                showMessage('Controller IP or password not configured', 'error');
                 return;
             }
             
@@ -457,15 +500,18 @@
             const durationHex = durationSeconds.toString(16).padStart(4, '0');
             const command = `39${zoneHex}${durationHex}`;
             
-            console.log(`REAL COMMAND: ${command} (Zone ${zoneId}, ${duration} min = ${durationSeconds}s)`);
-            console.log(`Command breakdown: 39 (start) + ${zoneHex} (zone) + ${durationHex} (${durationSeconds}s)`);
+            console.log(`WEBPAGE COMMAND: ${command} (Zone ${zoneId}, ${duration} min = ${durationSeconds}s)`);
+            console.log(`Using IP: ${currentIP}, Command breakdown: 39 (start) + ${zoneHex} (zone) + ${durationHex} (${durationSeconds}s)`);
+            
+            // Update UI immediately to show starting
+            updateZoneStatus(zoneId, 'starting');
             
             // Send REAL start command to controller
             fetch('/proxy', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    url: `http://${getCurrentIP()}/stick`,
+                    url: `http://${currentIP}/stick`,
                     data: {
                         "jsonrpc": "2.0", 
                         "method": "tunnelSip", 
@@ -476,12 +522,15 @@
                         "id": Date.now()
                     },
                     encrypt: true,
-                    password: getCurrentPassword()
+                    password: currentPassword
                 })
             })
-            .then(response => response.json())
+            .then(response => {
+                console.log('Fetch response status:', response.status);
+                return response.json();
+            })
             .then(result => {
-                console.log('REAL CONTROLLER RESPONSE:', result);
+                console.log('WEBPAGE CONTROLLER RESPONSE:', result);
                 if (result.success && result.data && result.data.result) {
                     const responseData = result.data.result.data;
                     console.log('Controller response data:', responseData);
@@ -489,7 +538,7 @@
                     // Check if command was accepted (should return 003904 or similar)
                     if (responseData && responseData.includes('39')) {
                         updateZoneStatus(zoneId, 'active', duration);
-                        showMessage(`Zone ${zoneId} started for ${duration} minutes on REAL controller`, 'success');
+                        showMessage(`Zone ${zoneId} started for ${duration} minutes`, 'success');
                         
                         // Verify zone is actually running after 3 seconds
                         setTimeout(() => {
@@ -497,17 +546,63 @@
                             updateSystemStatus();
                         }, 3000);
                     } else {
+                        updateZoneStatus(zoneId, 'inactive');
                         showMessage(`Zone ${zoneId} command sent but response unclear: ${responseData}`, 'warning');
                     }
                 } else {
+                    updateZoneStatus(zoneId, 'inactive');
+                    console.error('Controller error:', result);
                     showMessage(`Failed to start Zone ${zoneId}: ${result.error || 'Controller error'}`, 'error');
                 }
             })
             .catch(error => {
-                console.error('Real controller error:', error);
+                updateZoneStatus(zoneId, 'inactive');
+                console.error('WEBPAGE controller error:', error);
                 showMessage(`Error starting Zone ${zoneId}: ${error.message}`, 'error');
             });
         };
+        
+        // Update zone visual status - ENHANCED
+        function updateZoneStatus(zoneId, status, duration = null) {
+            const statusEl = document.getElementById(`zone-${zoneId}-status`);
+            const timerEl = document.getElementById(`zone-${zoneId}-timer`);
+            const startBtn = document.getElementById(`zone-${zoneId}-start`);
+            const stopBtn = document.getElementById(`zone-${zoneId}-stop`);
+            
+            if (!statusEl) {
+                console.error(`Status element not found for zone ${zoneId}`);
+                return;
+            }
+            
+            if (status === 'starting') {
+                statusEl.textContent = 'Starting...';
+                statusEl.className = 'zone-status connecting';
+                if (startBtn) startBtn.disabled = true;
+            } else if (status === 'active') {
+                statusEl.textContent = 'Running';
+                statusEl.className = 'zone-status active';
+                if (startBtn) {
+                    startBtn.style.display = 'none';
+                    startBtn.disabled = false;
+                }
+                if (stopBtn) stopBtn.style.display = 'inline-block';
+                
+                if (duration && timerEl) {
+                    timerEl.style.display = 'inline-block';
+                    startZoneTimer(zoneId, duration);
+                }
+            } else {
+                statusEl.textContent = 'Inactive';
+                statusEl.className = 'zone-status inactive';
+                if (startBtn) {
+                    startBtn.style.display = 'inline-block';
+                    startBtn.disabled = false;
+                }
+                if (stopBtn) stopBtn.style.display = 'none';
+                if (timerEl) timerEl.style.display = 'none';
+                clearZoneTimer(zoneId);
+            }
+        }
         
         window.stopZone = function(zoneId) {
             console.log(`🛑 Stopping zone ${zoneId} on REAL controller`);
@@ -1116,13 +1211,37 @@
             window.closeScheduleEditor();
         };
         
-        // Helper functions
+        // Helper functions - FIXED
         function getCurrentIP() {
-            return document.getElementById('settingsIp')?.value || '192.168.1.113';
+            // Try to get from settings modal first
+            const settingsIp = document.getElementById('settingsIp');
+            if (settingsIp && settingsIp.value) {
+                return settingsIp.value;
+            }
+            
+            // Fallback to stored settings
+            if (window.currentSettings && window.currentSettings.controller_ip) {
+                return window.currentSettings.controller_ip;
+            }
+            
+            // Final fallback
+            return '192.168.1.113';
         }
         
         function getCurrentPassword() {
-            return document.getElementById('settingsPassword')?.value || '1234';
+            // Try to get from settings modal first
+            const settingsPassword = document.getElementById('settingsPassword');
+            if (settingsPassword && settingsPassword.value) {
+                return settingsPassword.value;
+            }
+            
+            // Fallback to stored settings
+            if (window.currentSettings && window.currentSettings.controller_password) {
+                return window.currentSettings.controller_password;
+            }
+            
+            // Final fallback
+            return '1234';
         }
     </script>
 </head>
