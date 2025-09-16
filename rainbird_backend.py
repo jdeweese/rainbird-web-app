@@ -24,10 +24,18 @@ class RainBirdBackend:
         if self.controller is None:
             settings = self.settings_manager.load_settings()
             if settings.get('controller_ip') and settings.get('controller_password'):
-                self.controller = RainBirdController(
-                    settings['controller_ip'],
-                    settings['controller_password']
-                )
+                try:
+                    self.controller = RainBirdController(
+                        settings['controller_ip'],
+                        settings['controller_password']
+                    )
+                    # Test connection
+                    if not self.controller.test_connection():
+                        print(f"Controller connection test failed for {settings['controller_ip']}")
+                        self.controller = None
+                except Exception as e:
+                    print(f"Failed to create controller: {e}")
+                    self.controller = None
         return self.controller
     
     def refresh_connection(self):
@@ -38,19 +46,14 @@ class RainBirdBackend:
     # Zone Management
     def get_zones(self):
         """Get all available zones"""
-        controller = self.get_controller()
-        if not controller:
-            return {"success": False, "error": "Controller not configured"}
-        
         try:
-            # Get available stations
-            stations = controller.get_available_stations()
-            zones = []
-            
+            # Load settings first
             settings = self.settings_manager.load_settings()
             zone_names = settings.get('zone_names', {})
             
-            for zone_id in stations:
+            # Create default zones 1-21 based on your controller
+            zones = []
+            for zone_id in [1, 3, 5, 12, 13, 14, 21]:  # Your actual zones
                 zones.append({
                     "id": zone_id,
                     "name": zone_names.get(str(zone_id), f"Zone {zone_id}"),
@@ -59,18 +62,35 @@ class RainBirdBackend:
             
             return {"success": True, "zones": zones}
         except Exception as e:
+            print(f"Error getting zones: {e}")
             return {"success": False, "error": str(e)}
     
     def start_zone(self, zone_id, duration_minutes):
         """Start a specific zone"""
-        controller = self.get_controller()
-        if not controller:
-            return {"success": False, "error": "Controller not configured"}
-        
         try:
-            result = controller.start_irrigation(zone_id, duration_minutes)
-            return {"success": True, "result": result}
+            # Use existing proxy method for now
+            import requests
+            settings = self.settings_manager.load_settings()
+            
+            response = requests.post('http://localhost:8000/proxy', json={
+                "url": f"http://{settings['controller_ip']}/stick",
+                "data": {
+                    "jsonrpc": "2.0",
+                    "method": "tunnelSip", 
+                    "params": {
+                        "data": f"39{zone_id:02x}{duration_minutes*60:04x}",
+                        "length": 4
+                    },
+                    "id": 1
+                },
+                "encrypt": True,
+                "password": settings['controller_password']
+            })
+            
+            result = response.json()
+            return {"success": result.get('success', False), "result": result}
         except Exception as e:
+            print(f"Error starting zone: {e}")
             return {"success": False, "error": str(e)}
     
     def stop_zone(self, zone_id):
