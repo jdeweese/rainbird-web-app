@@ -187,30 +187,104 @@ class RainBirdCLI:
             print(f"❌ Failed to stop irrigation: {e}")
     
     async def get_programs(self):
-        """Get program information with ESP-ME3 limitations"""
+        """Get program information with complete schedule details"""
         if not self.controller:
             print("❌ Not connected to controller")
             return
         
         try:
-            print("📋 Getting program information...")
+            print("📋 Getting complete program and schedule information...")
+            
+            # Get all program-related data
             program_info = await self.controller.get_program_info()
             schedule = await self.controller.get_schedule()
             settings = await self.controller.get_settings()
             
-            print(f"✅ Controller Program Capabilities:")
-            print(f"   📊 Number of programs: {getattr(settings, 'num_programs', 'Unknown')}")
-            print(f"   🌱 Soil types: {[str(soil) for soil in program_info.soil_types if soil.value != 0]}")
-            print(f"   💧 Flow rates: {program_info.flow_rates}")
+            print(f"✅ Controller Program Analysis:")
+            print(f"   📊 Program slots available: {getattr(settings, 'num_programs', 'Unknown')}")
+            print(f"   🔧 Program opt-out mask: {getattr(settings, 'program_opt_out_mask', 'Unknown')}")
             
+            # Show program configuration
+            print(f"\n📋 Program Configuration:")
+            for i in range(len(program_info.soil_types)):
+                soil_type = program_info.soil_types[i]
+                flow_rate = program_info.flow_rates[i]
+                flow_unit = program_info.flow_units[i]
+                
+                print(f"   Program {i+1}:")
+                print(f"     🌱 Soil Type: {soil_type} (value: {soil_type.value})")
+                print(f"     💧 Flow Rate: {flow_rate}")
+                print(f"     📏 Flow Unit: {flow_unit}")
+            
+            # Show schedule details
+            print(f"\n📅 Schedule Information:")
+            print(f"   🕐 Station Delay: {schedule.controller_info.station_delay} seconds")
+            print(f"   🌧️  Rain Delay: {schedule.controller_info.rain_delay} days")
+            print(f"   🌦️  Rain Sensor: {'Active' if schedule.controller_info.rain_sensor else 'Inactive'}")
+            print(f"   ⏸️  Current Delay Days: {schedule.delay_days}")
+            
+            # Iterate through all programs in schedule
+            print(f"\n🗓️  Stored Programs: {len(schedule.programs)}")
             if schedule.programs:
-                print(f"   📅 Stored programs: {len(schedule.programs)}")
                 for i, program in enumerate(schedule.programs, 1):
-                    print(f"      Program {i}: {program}")
+                    print(f"\n   📋 Program {i}:")
+                    print(f"      Raw data: {program}")
+                    
+                    # Try to extract program details if available
+                    if hasattr(program, '__dict__'):
+                        for attr in dir(program):
+                            if not attr.startswith('_'):
+                                try:
+                                    value = getattr(program, attr)
+                                    if 'zone' in attr.lower() or 'time' in attr.lower() or 'duration' in attr.lower():
+                                        print(f"      {attr}: {value}")
+                                except:
+                                    pass
+                    
+                    # Check for zone assignments
+                    if hasattr(program, 'zones') or hasattr(program, 'stations'):
+                        zones = getattr(program, 'zones', getattr(program, 'stations', None))
+                        if zones:
+                            print(f"      🚿 Zones: {zones}")
+                    
+                    # Check for timing information
+                    if hasattr(program, 'start_time') or hasattr(program, 'run_time'):
+                        start_time = getattr(program, 'start_time', None)
+                        run_time = getattr(program, 'run_time', None)
+                        if start_time:
+                            print(f"      🕐 Start Time: {start_time}")
+                        if run_time:
+                            print(f"      ⏱️  Run Time: {run_time}")
+                    
+                    # Check for days of week
+                    if hasattr(program, 'days') or hasattr(program, 'schedule_days'):
+                        days = getattr(program, 'days', getattr(program, 'schedule_days', None))
+                        if days:
+                            print(f"      📅 Days: {days}")
             else:
-                print(f"   ⚠️  No stored programs found")
-                print(f"   💡 ESP-ME3 is a basic controller focused on manual zone control")
-                print(f"   💡 Use zone control features for irrigation management")
+                print(f"   ⚠️  No programs stored in controller")
+                print(f"   💡 ESP-ME3 is a basic controller - programs may need to be")
+                print(f"   💡 configured through the physical controller or mobile app")
+            
+            # Show timeline information if available
+            if hasattr(schedule, 'timeline') and schedule.timeline:
+                print(f"\n⏰ Timeline Information:")
+                try:
+                    # Try to get timeline details
+                    timeline = schedule.timeline
+                    print(f"   📊 Timeline object: {timeline}")
+                    
+                    # Check for timeline methods/properties
+                    if hasattr(timeline, 'get_current_program'):
+                        current = timeline.get_current_program()
+                        print(f"   🎯 Current program: {current}")
+                    
+                    if hasattr(timeline, 'get_next_program'):
+                        next_prog = timeline.get_next_program()
+                        print(f"   ⏭️  Next program: {next_prog}")
+                        
+                except Exception as e:
+                    print(f"   ⚠️  Timeline details unavailable: {e}")
             
         except Exception as e:
             print(f"❌ Failed to get programs: {e}")
