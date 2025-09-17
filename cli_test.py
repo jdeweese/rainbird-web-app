@@ -227,40 +227,46 @@ class RainBirdCLI:
             print(f"\n🗓️  Stored Programs: {len(schedule.programs)}")
             if schedule.programs:
                 for i, program in enumerate(schedule.programs, 1):
-                    print(f"\n   📋 Program {i}:")
-                    print(f"      Raw data: {program}")
+                    print(f"\n   📋 Program {i} ({program.name}):")
+                    print(f"      🔢 Program Number: {program.program}")
+                    print(f"      📅 Frequency: {program.frequency}")
                     
-                    # Try to extract program details if available
-                    if hasattr(program, '__dict__'):
-                        for attr in dir(program):
-                            if not attr.startswith('_'):
-                                try:
-                                    value = getattr(program, attr)
-                                    if 'zone' in attr.lower() or 'time' in attr.lower() or 'duration' in attr.lower():
-                                        print(f"      {attr}: {value}")
-                                except:
-                                    pass
+                    # Show days of week for CUSTOM programs
+                    if program.days_of_week:
+                        days = [day.name for day in program.days_of_week]
+                        print(f"      📆 Days of Week: {', '.join(days)}")
                     
-                    # Check for zone assignments
-                    if hasattr(program, 'zones') or hasattr(program, 'stations'):
-                        zones = getattr(program, 'zones', getattr(program, 'stations', None))
-                        if zones:
-                            print(f"      🚿 Zones: {zones}")
+                    # Show period for CYCLIC programs
+                    if program.period:
+                        print(f"      🔄 Period: Every {program.period} days")
                     
-                    # Check for timing information
-                    if hasattr(program, 'start_time') or hasattr(program, 'run_time'):
-                        start_time = getattr(program, 'start_time', None)
-                        run_time = getattr(program, 'run_time', None)
-                        if start_time:
-                            print(f"      🕐 Start Time: {start_time}")
-                        if run_time:
-                            print(f"      ⏱️  Run Time: {run_time}")
+                    # Show start times
+                    if program.starts:
+                        start_times = [start.strftime('%I:%M %p') for start in program.starts]
+                        print(f"      🕐 Start Times: {', '.join(start_times)}")
                     
-                    # Check for days of week
-                    if hasattr(program, 'days') or hasattr(program, 'schedule_days'):
-                        days = getattr(program, 'days', getattr(program, 'schedule_days', None))
-                        if days:
-                            print(f"      📅 Days: {days}")
+                    # Show zone durations (the key info you wanted)
+                    if program.durations:
+                        print(f"      🚿 Zone Durations:")
+                        total_duration = 0
+                        for zone_duration in program.durations:
+                            zone_num = zone_duration.zone
+                            duration_mins = int(zone_duration.duration.total_seconds() / 60)
+                            total_duration += duration_mins
+                            print(f"         Zone {zone_num}: {duration_mins} minutes")
+                        print(f"      ⏱️  Total Program Duration: {total_duration} minutes")
+                    else:
+                        print(f"      ⚠️  No zone durations configured")
+                    
+                    # Show synchro if set
+                    if program.synchro:
+                        print(f"      🔄 Synchro: {program.synchro} days")
+                    
+                    # Show total program duration
+                    total_duration = program.duration
+                    if total_duration.total_seconds() > 0:
+                        mins = int(total_duration.total_seconds() / 60)
+                        print(f"      ⏰ Program Duration: {mins} minutes")
             else:
                 print(f"   ⚠️  No programs stored in controller")
                 print(f"   💡 ESP-ME3 is a basic controller - programs may need to be")
