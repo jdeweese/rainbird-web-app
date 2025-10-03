@@ -1,27 +1,33 @@
-# Python
+# Runtime files
+server.pid
+.active_zone
+
+# Configuration files with sensitive data
+config.json
+settings.json
+
+# Test files
+test_*.py
+
+# Python cache
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
+*.pyc
+*.pyo
+*.pyd
 .Python
-env/
+*.so
+
+# Virtual environments
 venv/
+env/
 ENV/
 
-# Project specific
-server.out
-*.log
-.DS_Store
-
-# Settings (keep local)
-controller_settings.json
-
-# IDE
+# IDE files
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# Temporary files
-*.tmp
-*.bak
+# OS files
+.DS_Store
+Thumbs.db

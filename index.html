@@ -4,49 +4,604 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RainBird Controller</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        header { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .zones-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
-        .zone-item { background: white; padding: 16px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .zone-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .zone-name { font-weight: bold; font-size: 16px; }
-        .zone-status { padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; }
-        .zone-status.inactive { background: #e9ecef; color: #6c757d; }
-        .zone-status.active { background: #d4edda; color: #155724; }
-        .zone-controls { display: flex; gap: 8px; align-items: center; }
-        .duration-input { padding: 6px 12px; border: 1px solid #ddd; border-radius: 4px; width: 80px; }
-        .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
-        .btn-success { background: #28a745; color: white; }
-        .btn-danger { background: #dc3545; color: white; }
-        .btn-secondary { background: #6c757d; color: white; }
-        .loading { text-align: center; padding: 40px; color: #666; }
-        .message { padding: 12px; margin: 10px 0; border-radius: 4px; }
-        .message.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .message.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2196f3 0%, #21cbf3 100%);
+            color: white;
+            padding: 24px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 32px rgba(33, 150, 243, 0.3);
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 300;
+            margin-bottom: 8px;
+        }
+
+        .header .subtitle {
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 500;
+            margin-bottom: 20px;
+            color: #1976d2;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            position: relative;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 16px 12px 8px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.2s ease;
+            background: transparent;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #2196f3;
+        }
+
+        .input-group label {
+            position: absolute;
+            left: 12px;
+            top: 16px;
+            color: #666;
+            font-size: 16px;
+            transition: all 0.2s ease;
+            pointer-events: none;
+        }
+
+        .input-group input:focus + label,
+        .input-group input:not(:placeholder-shown) + label {
+            top: 4px;
+            font-size: 12px;
+            color: #2196f3;
+            font-weight: 500;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: #2196f3;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1976d2;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #666;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .status-item {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .status-item.active {
+            background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
+            color: #2e7d32;
+        }
+
+        .status-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.7;
+            margin-bottom: 4px;
+        }
+
+        .status-value {
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .zones-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 16px;
+        }
+
+        .zone-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+        }
+
+        .zone-card.running {
+            border-color: #4caf50;
+            background: linear-gradient(135deg, #f1f8e9 0%, #e8f5e8 100%);
+        }
+
+        .zone-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .zone-name-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .zone-name-input {
+            border: none;
+            background: transparent;
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #333;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background 0.2s ease;
+            min-width: 120px;
+        }
+
+        .zone-name-input:focus {
+            outline: none;
+            background: rgba(33, 150, 243, 0.1);
+        }
+
+        .zone-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .zone-status.inactive {
+            background: #f5f5f5;
+            color: #666;
+        }
+
+        .zone-status.active {
+            background: #4caf50;
+            color: white;
+        }
+
+        .zone-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .duration-input {
+            width: 80px;
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .duration-input:focus {
+            outline: none;
+            border-color: #2196f3;
+        }
+
+        .icon-btn {
+            width: 48px;
+            height: 48px;
+            border: none;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 20px;
+        }
+
+        .icon-btn.start {
+            background: #4caf50;
+            color: white;
+        }
+
+        .icon-btn.start:hover {
+            background: #388e3c;
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+        }
+
+        .icon-btn.stop {
+            background: #f44336;
+            color: white;
+        }
+
+        .icon-btn.stop:hover {
+            background: #d32f2f;
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(244, 67, 54, 0.4);
+        }
+
+        .message {
+            padding: 16px;
+            margin: 16px 0;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: slideIn 0.3s ease;
+        }
+
+        .message.success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            border-left: 4px solid #4caf50;
+        }
+
+        .message.error {
+            background: #ffebee;
+            color: #c62828;
+            border-left: 4px solid #f44336;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .container {
+                padding: 12px;
+            }
+
+            .header {
+                padding: 20px 16px;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .card {
+                padding: 16px;
+                margin-bottom: 16px;
+            }
+
+            .config-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .zones-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .zone-controls {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .status-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .zone-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
+            .zone-name-container {
+                width: 100%;
+            }
+
+            .zone-controls {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+
+        /* Popup Styles */
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .popup-panel {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .popup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .popup-title {
+            font-size: 1.25rem;
+            font-weight: 500;
+            color: #1976d2;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+            padding: 4px;
+            border-radius: 50%;
+            transition: background 0.2s ease;
+        }
+
+        .close-btn:hover {
+            background: #f5f5f5;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>🌱 RainBird Controller</h1>
-            <p>Using PyRainBird Library</p>
-        </header>
+        <div class="header">
+            <h1><span class="material-icons" style="vertical-align: middle; margin-right: 8px;">water_drop</span>RainBird Controller</h1>
+            <div class="subtitle">Smart Irrigation Management System</div>
+        </div>
 
         <div id="messages"></div>
 
-        <div class="zones-section">
-            <h2>Irrigation Zones</h2>
+        <div class="card">
+            <div class="card-title">
+                <span class="material-icons">dashboard</span>
+                System Status
+                <button class="btn btn-secondary" onclick="openConfigPopup()" style="margin-left: auto;">
+                    <span class="material-icons">settings</span>
+                    Settings
+                </button>
+            </div>
+            <div id="statusDisplay" class="status-grid">
+                <div class="status-item">
+                    <div class="status-label">Irrigation</div>
+                    <div class="status-value">Loading...</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">Active Zone</div>
+                    <div class="status-value">-</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">Rain Sensor</div>
+                    <div class="status-value">-</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">Controller</div>
+                    <div class="status-value">-</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">Connection</div>
+                    <div class="status-value" id="connectionStatus">-</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">Last Update</div>
+                    <div class="status-value" id="lastUpdate">-</div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px;">
+                <button class="btn btn-primary" onclick="stopAllZones()">
+                    <span class="material-icons">stop</span>
+                    Emergency Stop All
+                </button>
+                <button class="btn btn-secondary" onclick="openDiagnosticsPopup()">
+                    <span class="material-icons">bug_report</span>
+                    Diagnostics
+                </button>
+                <button class="btn btn-secondary" onclick="toggleRainSensorOverride()">
+                    <span class="material-icons">cloud</span>
+                    Rain Override
+                </button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">
+                <span class="material-icons">grass</span>
+                Irrigation Zones
+            </div>
             <div class="zones-grid" id="zonesList">
-                <div class="loading">Loading zones...</div>
+                <div style="text-align: center; padding: 40px; color: #666;">
+                    <span class="material-icons" style="font-size: 48px; opacity: 0.5;">hourglass_empty</span>
+                    <div>Loading zones...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Configuration Popup -->
+    <div class="popup-overlay" id="configPopup">
+        <div class="popup-panel">
+            <div class="popup-header">
+                <div class="popup-title">
+                    <span class="material-icons">settings</span>
+                    Configuration Settings
+                </div>
+                <button class="close-btn" onclick="closeConfigPopup()">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="config-grid">
+                <div class="input-group">
+                    <input type="text" id="controllerIp" placeholder=" ">
+                    <label>Controller IP Address</label>
+                </div>
+                <div class="input-group">
+                    <input type="password" id="controllerPassword" placeholder=" ">
+                    <label>Password</label>
+                </div>
+                <div class="input-group">
+                    <input type="number" id="refreshRate" min="1" max="60" placeholder=" ">
+                    <label>Refresh Rate (seconds)</label>
+                </div>
+            </div>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px;">
+                <button class="btn btn-primary" onclick="saveConfigAndClose()">
+                    <span class="material-icons">save</span>
+                    Save & Close
+                </button>
+                <button class="btn btn-secondary" onclick="closeConfigPopup()">
+                    <span class="material-icons">close</span>
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Diagnostics Popup -->
+    <div class="popup-overlay" id="diagnosticsPopup">
+        <div class="popup-panel">
+            <div class="popup-header">
+                <div class="popup-title">
+                    <span class="material-icons">bug_report</span>
+                    System Diagnostics
+                </div>
+                <button class="close-btn" onclick="closeDiagnosticsPopup()">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div id="diagnosticsContent">
+                <div style="text-align: center; padding: 20px;">
+                    <span class="material-icons" style="font-size: 48px; opacity: 0.5;">hourglass_empty</span>
+                    <div>Loading diagnostics...</div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px;">
+                <button class="btn btn-primary" onclick="refreshDiagnostics()">
+                    <span class="material-icons">refresh</span>
+                    Refresh
+                </button>
+                <button class="btn btn-secondary" onclick="closeDiagnosticsPopup()">
+                    <span class="material-icons">close</span>
+                    Close
+                </button>
             </div>
         </div>
     </div>
 
     <script>
-        // Load zones on page load
-        window.addEventListener('load', loadZones);
+        // Load zones and config on page load
+        let statusInterval;
+        window.addEventListener('load', () => {
+            loadZones();
+            loadConfig();
+            startStatusMonitoring();
+        });
 
         async function loadZones() {
             try {
@@ -69,16 +624,24 @@
 
             zones.forEach(zone => {
                 html += `
-                    <div class="zone-item">
+                    <div class="zone-card" id="zone-card-${zone.id}">
                         <div class="zone-header">
-                            <div class="zone-name">${zone.name}</div>
+                            <div class="zone-name-container">
+                                <span class="material-icons" style="color: #4caf50;">grass</span>
+                                <input type="text" class="zone-name-input" id="name-${zone.id}" 
+                                       value="${zone.name}" onchange="updateZoneName(${zone.id}, this.value)">
+                            </div>
                             <span class="zone-status inactive" id="status-${zone.id}">Inactive</span>
                         </div>
                         <div class="zone-controls">
                             <input type="number" class="duration-input" id="duration-${zone.id}" 
                                    min="1" max="60" value="10" placeholder="Min">
-                            <button class="btn btn-success" onclick="startZone(${zone.id})">Start</button>
-                            <button class="btn btn-danger" onclick="stopZone(${zone.id})">Stop</button>
+                            <button class="icon-btn start" onclick="startZone(${zone.id})" title="Start Zone">
+                                <span class="material-icons">play_arrow</span>
+                            </button>
+                            <button class="icon-btn stop" onclick="stopZone(${zone.id})" title="Stop Zone">
+                                <span class="material-icons">stop</span>
+                            </button>
                         </div>
                     </div>
                 `;
@@ -134,23 +697,319 @@
 
         function updateZoneStatus(zoneId, status) {
             const statusEl = document.getElementById(`status-${zoneId}`);
-            if (statusEl) {
+            const cardEl = document.getElementById(`zone-card-${zoneId}`);
+            
+            if (statusEl && cardEl) {
                 statusEl.textContent = status === 'active' ? 'Running' : 'Inactive';
                 statusEl.className = `zone-status ${status}`;
+                
+                if (status === 'active') {
+                    cardEl.classList.add('running');
+                } else {
+                    cardEl.classList.remove('running');
+                }
             }
+        }
+
+        async function loadConfig() {
+            try {
+                const response = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'load' })
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById('controllerIp').value = result.settings.controller_ip || '';
+                    document.getElementById('controllerPassword').value = result.settings.controller_password || '';
+                    document.getElementById('refreshRate').value = result.settings.refresh_interval || 5;
+                }
+            } catch (error) {
+                showMessage(`Failed to load config: ${error.message}`, 'error');
+            }
+        }
+
+        async function saveConfig() {
+            const settings = {
+                controller_ip: document.getElementById('controllerIp').value,
+                controller_password: document.getElementById('controllerPassword').value,
+                timeout: 10,
+                auto_connect: false,
+                refresh_interval: parseInt(document.getElementById('refreshRate').value) || 5,
+                zone_names: {}
+            };
+
+            try {
+                const response = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'save', settings: settings })
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage('Configuration saved successfully', 'success');
+                    restartStatusMonitoring();
+                } else {
+                    showMessage('Failed to save configuration', 'error');
+                }
+            } catch (error) {
+                showMessage(`Failed to save config: ${error.message}`, 'error');
+            }
+        }
+
+        async function updateZoneName(zoneId, newName) {
+            try {
+                const response = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'update-zone-name', zone_id: zoneId, name: newName })
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage(`Zone ${zoneId} name updated`, 'success');
+                } else {
+                    showMessage('Failed to update zone name', 'error');
+                }
+            } catch (error) {
+                showMessage(`Failed to update zone name: ${error.message}`, 'error');
+            }
+        }
+
+        async function getStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const status = data.status;
+                    const statusDisplay = document.getElementById('statusDisplay');
+                    
+                    statusDisplay.innerHTML = `
+                        <div class="status-item ${status.irrigation_state.active ? 'active' : ''}">
+                            <div class="status-label">Irrigation</div>
+                            <div class="status-value">${status.irrigation_state.active ? 'ACTIVE' : 'INACTIVE'}</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-label">Active Zone</div>
+                            <div class="status-value">${status.irrigation_state.zone || 'None'}</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-label">Rain Sensor</div>
+                            <div class="status-value">${status.rain_sensor.status.toUpperCase()}</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-label">Controller</div>
+                            <div class="status-value">${status.model_info.model} v${status.model_info.version}</div>
+                        </div>
+                        <div class="status-item" id="connectionStatusItem">
+                            <div class="status-label">Connection</div>
+                            <div class="status-value" id="connectionStatus">CHECKING...</div>
+                        </div>
+                        <div class="status-item">
+                            <div class="status-label">Last Update</div>
+                            <div class="status-value" id="lastUpdate">${new Date().toLocaleTimeString()}</div>
+                        </div>
+                    `;
+                    
+                    // Update connection status separately
+                    getConnectionStatus();
+                    
+                    // Update zone statuses
+                    for (let i = 1; i <= 19; i++) {
+                        const statusEl = document.getElementById(`status-${i}`);
+                        const cardEl = document.getElementById(`zone-card-${i}`);
+                        if (statusEl && cardEl) {
+                            if (status.irrigation_state.active && status.irrigation_state.zone === i) {
+                                updateZoneStatus(i, 'active');
+                            } else {
+                                updateZoneStatus(i, 'inactive');
+                            }
+                        }
+                    }
+                } else {
+                    document.getElementById('statusDisplay').innerHTML = `
+                        <div class="status-item">
+                            <div class="status-label">Error</div>
+                            <div class="status-value">${data.error}</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('statusDisplay').innerHTML = `
+                    <div class="status-item">
+                        <div class="status-label">Connection Error</div>
+                        <div class="status-value">${error.message}</div>
+                    </div>
+                `;
+            }
+        }
+
+        function startStatusMonitoring() {
+            getStatus(); // Get initial status
+            const refreshRate = parseInt(document.getElementById('refreshRate').value) || 5;
+            statusInterval = setInterval(getStatus, refreshRate * 1000);
+        }
+
+        function restartStatusMonitoring() {
+            if (statusInterval) clearInterval(statusInterval);
+            startStatusMonitoring();
         }
 
         function showMessage(message, type = 'info') {
             const messagesDiv = document.getElementById('messages');
             const messageEl = document.createElement('div');
             messageEl.className = `message ${type}`;
-            messageEl.textContent = message;
+            
+            const icon = type === 'success' ? 'check_circle' : 'error';
+            messageEl.innerHTML = `
+                <span class="material-icons">${icon}</span>
+                ${message}
+            `;
+            
             messagesDiv.appendChild(messageEl);
 
             // Remove message after 5 seconds
             setTimeout(() => {
                 messageEl.remove();
             }, 5000);
+        }
+
+        function openConfigPopup() {
+            loadConfig();
+            document.getElementById('configPopup').style.display = 'flex';
+        }
+
+        function closeConfigPopup() {
+            document.getElementById('configPopup').style.display = 'none';
+        }
+
+        async function saveConfigAndClose() {
+            await saveConfig();
+            closeConfigPopup();
+        }
+
+        // New Features Implementation
+        let rainSensorOverride = false;
+
+        async function stopAllZones() {
+            if (!confirm('Stop all irrigation zones?')) return;
+            
+            try {
+                const response = await fetch('/api/zones/stop-all', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage(result.message, 'success');
+                    // Update all zone statuses
+                    for (let i = 1; i <= 19; i++) {
+                        updateZoneStatus(i, 'inactive');
+                    }
+                } else {
+                    showMessage(`Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Failed to stop all zones: ${error.message}`, 'error');
+            }
+        }
+
+        async function toggleRainSensorOverride() {
+            rainSensorOverride = !rainSensorOverride;
+            
+            try {
+                const response = await fetch('/api/rain-sensor/override', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ override: rainSensorOverride })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage(result.message, 'success');
+                } else {
+                    showMessage(`Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Failed to toggle rain sensor: ${error.message}`, 'error');
+            }
+        }
+
+        function openDiagnosticsPopup() {
+            document.getElementById('diagnosticsPopup').style.display = 'flex';
+            refreshDiagnostics();
+        }
+
+        function closeDiagnosticsPopup() {
+            document.getElementById('diagnosticsPopup').style.display = 'none';
+        }
+
+        async function refreshDiagnostics() {
+            const content = document.getElementById('diagnosticsContent');
+            content.innerHTML = '<div style="text-align: center; padding: 20px;"><span class="material-icons" style="font-size: 48px; opacity: 0.5;">hourglass_empty</span><div>Loading diagnostics...</div></div>';
+            
+            try {
+                const response = await fetch('/api/diagnostics');
+                const result = await response.json();
+                
+                if (result.success) {
+                    content.innerHTML = `
+                        <div class="status-grid">
+                            <div class="status-item ${result.controller_configured ? 'active' : ''}">
+                                <div class="status-label">Controller Config</div>
+                                <div class="status-value">${result.controller_configured ? 'YES' : 'NO'}</div>
+                            </div>
+                            <div class="status-item ${result.controller_reachable ? 'active' : ''}">
+                                <div class="status-label">Controller Reachable</div>
+                                <div class="status-value">${result.controller_reachable ? 'YES' : 'NO'}</div>
+                            </div>
+                            <div class="status-item">
+                                <div class="status-label">Active Sessions</div>
+                                <div class="status-value">${result.active_sessions}</div>
+                            </div>
+                            <div class="status-item">
+                                <div class="status-label">Zones Configured</div>
+                                <div class="status-value">${result.zones_configured}</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 16px; padding: 12px; background: #f5f5f5; border-radius: 8px;">
+                            <strong>Connection Test:</strong> ${result.connection_test}
+                        </div>
+                    `;
+                } else {
+                    content.innerHTML = `<div class="message error">Failed to load diagnostics: ${result.error}</div>`;
+                }
+            } catch (error) {
+                content.innerHTML = `<div class="message error">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function getConnectionStatus() {
+            try {
+                const response = await fetch('/api/connection/status');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const statusEl = document.getElementById('connectionStatus');
+                    if (statusEl) {
+                        statusEl.textContent = result.connected ? 'CONNECTED' : 'DISCONNECTED';
+                        statusEl.parentElement.className = `status-item ${result.connected ? 'active' : ''}`;
+                    }
+                }
+            } catch (error) {
+                const statusEl = document.getElementById('connectionStatus');
+                if (statusEl) {
+                    statusEl.textContent = 'ERROR';
+                    statusEl.parentElement.className = 'status-item';
+                }
+            }
         }
     </script>
 </body>

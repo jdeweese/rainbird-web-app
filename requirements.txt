@@ -1,0 +1,2 @@
+pyrainbird>=0.4.0
+aiohttp>=3.8.0
