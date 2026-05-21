@@ -26,7 +26,7 @@ API Endpoints:
     POST /api/settings         - Load/save controller settings
 
 Settings Management:
-    Controller IP, password, and zone names are stored in settings.json.
+    Controller IP, password, and zone names are stored in config.json.
     This allows the web interface to remember controller configuration
     between sessions without hardcoding credentials.
 
@@ -78,6 +78,7 @@ TODO:
 """
 
 import json
+import os
 import asyncio
 import aiohttp
 import time
@@ -90,20 +91,27 @@ active_sessions = {}
 last_cleanup = time.time()
 
 class RainBirdHandler(BaseHTTPRequestHandler):
-    def set_active_zone(self, zone_id):
-        """Track the active zone in a simple file"""
+    def set_active_zone(self, zone_id, duration=None):
+        """Track the active zone and start time in a simple file"""
         try:
+            zone_data = {
+                'zone_id': zone_id,
+                'start_time': time.time() if zone_id else None,
+                'duration': duration if zone_id else None
+            }
             with open('.active_zone', 'w') as f:
-                f.write(str(zone_id) if zone_id else '')
+                json.dump(zone_data, f)
         except:
             pass
     
     def get_active_zone(self):
-        """Get the tracked active zone from file"""
+        """Get the tracked active zone with timing info from file"""
         try:
             with open('.active_zone', 'r') as f:
-                content = f.read().strip()
-                return int(content) if content else None
+                zone_data = json.load(f)
+                if zone_data.get('zone_id'):
+                    return zone_data
+                return None
         except:
             return None
     """
@@ -255,13 +263,13 @@ class RainBirdHandler(BaseHTTPRequestHandler):
         API endpoint: GET /api/zones - Get list of available irrigation zones.
 
         Returns a list of zones with their IDs, names, and availability status.
-        Zone names can be customized in settings.json, otherwise defaults are used.
+        Zone names can be customized in config.json, otherwise defaults are used.
 
         Zone Configuration:
             - Hardcoded zone IDs: [1, 3, 5, 12, 13, 14, 21]
             - These represent the physically wired zones on the controller
             - Not all 19 possible zones are necessarily wired/available
-            - Zone names loaded from settings.json['zone_names']
+            - Zone names loaded from config.json['zone_names']
 
         Response Format:
             {
@@ -375,21 +383,32 @@ class RainBirdHandler(BaseHTTPRequestHandler):
             irrigation_active = await controller.get_current_irrigation()
             rain_sensor = await controller.get_rain_sensor_state()
             
-            # Use tracked zone if irrigation is active, otherwise None
-            active_zone = self.get_active_zone() if irrigation_active else None
+            # Get tracked zone info with timing
+            zone_info = self.get_active_zone()
+            active_zone = None
+            time_remaining = 0
+            
+            if irrigation_active and zone_info:
+                active_zone = zone_info['zone_id']
+                if zone_info.get('start_time') and zone_info.get('duration'):
+                    elapsed = time.time() - zone_info['start_time']
+                    time_remaining = max(0, (zone_info['duration'] * 60) - elapsed)
+            elif not irrigation_active:
+                # Clear tracking if irrigation stopped
+                self.set_active_zone(None)
             
             status = {
                 "irrigation_state": {
                     "active": bool(irrigation_active),
                     "zone": active_zone,
-                    "time_remaining": 0
+                    "time_remaining": int(time_remaining)
                 },
                 "rain_sensor": {
                     "active": bool(rain_sensor),
                     "status": "active" if rain_sensor else "inactive"
                 },
                 "model_info": {"model": "ESP-ME3", "version": "2.12"},
-                "timestamp": int(asyncio.get_event_loop().time())
+                "timestamp": int(time.time())
             }
             
             return {"success": True, "status": status}
@@ -418,8 +437,8 @@ class RainBirdHandler(BaseHTTPRequestHandler):
             # Start irrigation on the specified zone
             await controller.irrigate_zone(zone_id, duration)
             
-            # Track the started zone
-            self.set_active_zone(zone_id)
+            # Track the started zone with timing info
+            self.set_active_zone(zone_id, duration)
             
             # Wait for controller to process command (like CLI does)
             await asyncio.sleep(2)
@@ -564,7 +583,7 @@ class RainBirdHandler(BaseHTTPRequestHandler):
         """
         API endpoint: POST /api/settings - Load or save application settings.
 
-        Handles both loading and saving of persistent settings stored in settings.json.
+        Handles both loading and saving of persistent settings stored in config.json.
         Settings include controller IP, password, zone names, and UI preferences.
 
         Request Body (Load):
@@ -610,7 +629,7 @@ class RainBirdHandler(BaseHTTPRequestHandler):
             None - Sends JSON response directly
 
         Security Note:
-            Settings including passwords are stored in plain text in settings.json.
+            Settings including passwords are stored in plain text in config.json.
             This is NOT secure but acceptable for local network use only.
         """
         action = request_data.get('action')
@@ -621,9 +640,12 @@ class RainBirdHandler(BaseHTTPRequestHandler):
             self.send_json_response({"success": True, "settings": settings})
 
         elif action == 'save':
-            # Save settings to file
-            settings = request_data.get('settings', {})
-            success = self.save_settings(settings)
+            # Merge incoming settings with existing file so partial saves
+            # (e.g. from the settings popup) don't wipe zone_names.
+            incoming = request_data.get('settings', {})
+            merged = self.load_settings()
+            merged.update(incoming)
+            success = self.save_settings(merged)
             self.send_json_response({"success": success})
 
         elif action == 'update-zone-name':
@@ -701,57 +723,16 @@ class RainBirdHandler(BaseHTTPRequestHandler):
         for key in list(active_sessions.keys()):
             if active_sessions[key]['last_used'] < cutoff:
                 try:
-                    # Note: Can't await here, but session will cleanup on GC
                     active_sessions[key]['session'].close()
                 except:
                     pass
                 del active_sessions[key]
-        """
-        Load application settings from settings.json file.
-
-        Reads and parses the JSON settings file. If the file doesn't exist,
-        returns default settings instead of raising an error.
-
-        Default Settings:
-            {
-                "controller_ip": "",              # No controller configured
-                "controller_password": "",         # No password set
-                "auto_connect": False,             # Don't auto-connect on load
-                "refresh_interval": 5,             # Update status every 5 seconds
-                "zone_names": {}                   # No custom zone names
-            }
-
-        Returns:
-            dict: Settings dictionary with all configuration values
-
-        Raises:
-            No exceptions - returns defaults if file doesn't exist.
-            JSON parsing errors would raise but should be rare.
-
-        File Location:
-            settings.json in the current working directory (same as server.py)
-
-        Note:
-            This method is called for every API request that needs settings,
-            so settings changes take effect immediately without restart.
-        """
-        try:
-            with open('settings.json', 'r') as f:
-                return json.load(f)
-        except FileNotFoundError:
-            # First run or settings file deleted - return defaults
-            return {
-                "controller_ip": "",
-                "controller_password": "",
-                "auto_connect": False,
-                "refresh_interval": 5,
-                "zone_names": {}
-            }
 
     def load_settings(self):
         """Load application settings from config.json file."""
+        config_path = os.environ.get("CONFIG_PATH", "/app/config/config.json")
         try:
-            with open('config.json', 'r') as f:
+            with open(config_path, 'r') as f:
                 settings = json.load(f)
                 settings.setdefault('auto_connect', False)
                 settings.setdefault('refresh_interval', 5)
@@ -769,8 +750,10 @@ class RainBirdHandler(BaseHTTPRequestHandler):
 
     def save_settings(self, settings):
         """Save application settings to config.json file."""
+        config_path = os.environ.get("CONFIG_PATH", "/app/config/config.json")
         try:
-            with open('config.json', 'w') as f:
+            os.makedirs(os.path.dirname(config_path), exist_ok=True)
+            with open(config_path, 'w') as f:
                 json.dump(settings, f, indent=2)
             return True
         except Exception as e:
@@ -846,46 +829,12 @@ class RainBirdHandler(BaseHTTPRequestHandler):
             self.send_error(404)
     
     def send_json_response(self, data):
-        """
-        Send JSON response to client.
-
-        Serializes Python dictionary to JSON and sends with appropriate HTTP headers.
-        Used by all API endpoints to return structured data to the web interface.
-
-        Args:
-            data (dict): Dictionary to serialize as JSON response
-
-        Returns:
-            None - Sends HTTP response directly
-
-        Response Headers:
-            - Content-Type: application/json (tells browser it's JSON)
-            - Content-Length: Exact byte length of JSON string
-
-        Encoding:
-            - JSON serialized to string
-            - String encoded to UTF-8 bytes for transmission
-            - Always uses UTF-8 (standard for JSON)
-
-        Example:
-            >>> self.send_json_response({"success": True, "data": [1, 2, 3]})
-            # Sends: {"success": true, "data": [1, 2, 3]}
-            # With Content-Type: application/json header
-
-        Note:
-            Always sends 200 OK status, even for logical errors.
-            Logical errors indicated by success=false in JSON body.
-        """
-        # Serialize dictionary to JSON string
+        """Send JSON response to client."""
         response = json.dumps(data)
-
-        # Send HTTP response with JSON content type
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
         self.send_header('Content-Length', str(len(response)))
         self.end_headers()
-
-        # Write JSON bytes to response
         self.wfile.write(response.encode('utf-8'))
 
     def log_message(self, format, *args):
@@ -956,10 +905,10 @@ def run_server(port=8000):
         or a proper async framework like FastAPI or Sanic.
     """
     # Create HTTP server with our handler class
-    server = HTTPServer(('localhost', port), RainBirdHandler)
+    server = HTTPServer(('0.0.0.0', port), RainBirdHandler)
 
     # Print startup information
-    print(f"🌱 RainBird Server running on http://localhost:{port}")
+    print(f"🌱 RainBird Server running on http://0.0.0.0:{port}")
     print("✅ Using PyRainBird library")
 
     # Run server loop indefinitely (blocks until interrupted)

@@ -3,8 +3,7 @@ server.pid
 .active_zone
 
 # Configuration files with sensitive data
-config.json
-settings.json
+config/config.json
 
 # Test files
 test_*.py
@@ -31,3 +30,6 @@ ENV/
 # OS files
 .DS_Store
 Thumbs.db
+
+# temp folder for coding
+temp/
