@@ -5,415 +5,499 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RainBird Controller</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --brand: #2196f3;
+            --brand-dark: #1976d2;
+            --ok: #4caf50;
+            --ok-dark: #388e3c;
+            --danger: #f44336;
+            --danger-dark: #d32f2f;
+            --text: #333;
+            --text-muted: #666;
+            --border: #e0e0e0;
+            --bg-subtle: #f5f7fa;
         }
 
         body {
             font-family: 'Roboto', sans-serif;
             background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
             min-height: 100vh;
-            color: #333;
+            color: var(--text);
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 960px;
             margin: 0 auto;
             padding: 16px;
         }
 
+        /* --- Sticky header with connection dot --- */
         .header {
-            background: linear-gradient(135deg, #2196f3 0%, #21cbf3 100%);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: linear-gradient(135deg, var(--brand) 0%, #21cbf3 100%);
             color: white;
-            padding: 24px;
-            border-radius: 16px;
-            margin-bottom: 24px;
-            box-shadow: 0 8px 32px rgba(33, 150, 243, 0.3);
-            text-align: center;
+            padding: 14px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 16px rgba(33, 150, 243, 0.25);
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
         .header h1 {
-            font-size: 2rem;
-            font-weight: 300;
-            margin-bottom: 8px;
-        }
-
-        .header .subtitle {
-            opacity: 0.9;
-            font-size: 0.9rem;
-        }
-
-        .card {
-            background: white;
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 24px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-        }
-
-        .card-title {
             font-size: 1.25rem;
-            font-weight: 500;
-            margin-bottom: 20px;
-            color: #1976d2;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .config-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 16px;
-            margin-bottom: 20px;
-        }
-
-        .input-group {
-            position: relative;
-        }
-
-        .input-group input {
-            width: 100%;
-            padding: 16px 12px 8px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.2s ease;
-            background: transparent;
-        }
-
-        .input-group input:focus {
-            outline: none;
-            border-color: #2196f3;
-        }
-
-        .input-group label {
-            position: absolute;
-            left: 12px;
-            top: 16px;
-            color: #666;
-            font-size: 16px;
-            transition: all 0.2s ease;
-            pointer-events: none;
-        }
-
-        .input-group input:focus + label,
-        .input-group input:not(:placeholder-shown) + label {
-            top: 4px;
-            font-size: 12px;
-            color: #2196f3;
-            font-weight: 500;
-        }
-
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .btn-primary {
-            background: #2196f3;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #1976d2;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
-        }
-
-        .btn-secondary {
-            background: #f5f5f5;
-            color: #666;
-        }
-
-        .btn-secondary:hover {
-            background: #e0e0e0;
-        }
-
-        .status-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-        }
-
-        .status-item {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            padding: 16px;
-            border-radius: 12px;
-            text-align: center;
-        }
-
-        .status-item.active {
-            background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
-            color: #2e7d32;
-        }
-
-        .status-label {
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            opacity: 0.7;
-            margin-bottom: 4px;
-        }
-
-        .status-value {
-            font-size: 1.1rem;
-            font-weight: 500;
-        }
-
-        .zones-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 16px;
-        }
-
-        .zone-card {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-            transition: all 0.2s ease;
-            border: 2px solid transparent;
-        }
-
-        .zone-card.running {
-            border-color: #4caf50;
-            background: linear-gradient(135deg, #f1f8e9 0%, #e8f5e8 100%);
-        }
-
-        .zone-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-
-        .zone-name-container {
+            font-weight: 400;
             display: flex;
             align-items: center;
             gap: 8px;
             flex: 1;
         }
 
-        .zone-name-input {
-            border: none;
-            background: transparent;
-            font-size: 1.1rem;
-            font-weight: 500;
-            color: #333;
-            padding: 4px 8px;
-            border-radius: 4px;
-            transition: background 0.2s ease;
-            min-width: 120px;
+        .conn-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ccc;
+            flex-shrink: 0;
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
         }
+        .conn-dot.ok { background: #4caf50; }
+        .conn-dot.err { background: #f44336; }
 
-        .zone-name-input:focus {
-            outline: none;
-            background: rgba(33, 150, 243, 0.1);
-        }
-
-        .zone-status {
-            padding: 4px 12px;
-            border-radius: 20px;
+        .header-status {
             font-size: 0.8rem;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .zone-status.inactive {
-            background: #f5f5f5;
-            color: #666;
-        }
-
-        .zone-status.active {
-            background: #4caf50;
-            color: white;
-        }
-
-        .zone-controls {
+            opacity: 0.9;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 6px;
         }
 
-        .duration-input {
-            width: 80px;
-            padding: 8px 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            text-align: center;
-            font-weight: 500;
-        }
-
-        .duration-input:focus {
-            outline: none;
-            border-color: #2196f3;
-        }
-
-        .icon-btn {
-            width: 48px;
-            height: 48px;
+        .icon-header-btn {
+            background: rgba(255, 255, 255, 0.15);
             border: none;
+            color: white;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: background 0.2s ease;
+        }
+        .icon-header-btn:hover { background: rgba(255, 255, 255, 0.28); }
+
+        /* --- Active zone banner --- */
+        .active-banner {
+            background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 6px solid var(--ok);
+            display: none;
+        }
+        .active-banner.visible { display: block; }
+
+        .active-banner-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .active-banner-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--ok-dark);
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .active-banner-zone {
+            font-size: 1.5rem;
+            font-weight: 500;
+            color: #1b5e20;
+        }
+
+        .active-banner-countdown {
+            font-size: 2.25rem;
+            font-weight: 300;
+            color: #1b5e20;
+            font-variant-numeric: tabular-nums;
+            line-height: 1;
+        }
+
+        .active-banner-countdown-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--ok-dark);
+            text-align: right;
+        }
+
+        .progress-bar {
+            margin-top: 16px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--ok);
+            transition: width 1s linear;
+            border-radius: 4px;
+        }
+
+        .active-banner-stop {
+            margin-top: 16px;
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s ease;
-            font-size: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: background 0.2s ease;
+        }
+        .active-banner-stop:hover { background: var(--danger-dark); }
+
+        /* --- Cards --- */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
         }
 
-        .icon-btn.start {
-            background: #4caf50;
+        .card-title {
+            font-size: 1rem;
+            font-weight: 500;
+            margin-bottom: 16px;
+            color: var(--brand-dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* --- Empty state (first run) --- */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+        .empty-state .material-icons {
+            font-size: 56px;
+            opacity: 0.4;
+            margin-bottom: 12px;
+        }
+        .empty-state-title {
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+        .empty-state-body {
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+            max-width: 340px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* --- Zone search --- */
+        .zone-toolbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+            align-items: center;
+        }
+        .zone-search {
+            flex: 1;
+            padding: 10px 12px 10px 36px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            background: white url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'><circle cx='11' cy='11' r='7'/><line x1='21' y1='21' x2='16.65' y2='16.65'/></svg>") no-repeat 10px center;
+        }
+        .zone-search:focus {
+            outline: none;
+            border-color: var(--brand);
+        }
+
+        /* --- Zones grid --- */
+        .zones-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 12px;
+        }
+
+        .zone-card {
+            background: white;
+            border-radius: 10px;
+            padding: 16px;
+            border: 2px solid var(--border);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .zone-card:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+        .zone-card.running {
+            border-color: var(--ok);
+            background: linear-gradient(135deg, #f1f8e9 0%, #e8f5e8 100%);
+            order: -1;
+        }
+
+        .zone-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .zone-num {
+            background: var(--bg-subtle);
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-weight: 500;
+            padding: 2px 8px;
+            border-radius: 10px;
+            flex-shrink: 0;
+        }
+
+        .zone-card.running .zone-num {
+            background: var(--ok);
             color: white;
         }
 
-        .icon-btn.start:hover {
-            background: #388e3c;
-            transform: scale(1.1);
-            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+        .zone-name {
+            flex: 1;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text);
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
-        .icon-btn.stop {
-            background: #f44336;
+        .zone-name-input {
+            flex: 1;
+            border: 2px solid var(--brand);
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            font-family: inherit;
+            outline: none;
+            min-width: 0;
+        }
+
+        .zone-edit-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.15s ease, background 0.15s ease;
+        }
+        .zone-card:hover .zone-edit-btn,
+        .zone-edit-btn:focus {
+            opacity: 1;
+        }
+        .zone-edit-btn:hover {
+            background: var(--bg-subtle);
+            color: var(--text);
+        }
+
+        .zone-saved-hint {
+            font-size: 0.7rem;
+            color: var(--ok-dark);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        .zone-saved-hint.visible { opacity: 1; }
+
+        /* --- Duration chips --- */
+        .duration-chips {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .chip {
+            background: var(--bg-subtle);
+            border: 1px solid transparent;
+            color: var(--text-muted);
+            padding: 5px 10px;
+            border-radius: 16px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .chip:hover {
+            background: #e8eef5;
+        }
+        .chip.selected {
+            background: var(--brand);
             color: white;
+            border-color: var(--brand);
+        }
+        .chip.custom {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .chip-input {
+            width: 36px;
+            border: none;
+            background: transparent;
+            color: inherit;
+            font-size: inherit;
+            font-weight: inherit;
+            text-align: center;
+            padding: 0;
+            -moz-appearance: textfield;
+        }
+        .chip-input::-webkit-outer-spin-button,
+        .chip-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+        /* --- Zone actions --- */
+        .zone-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
         }
 
-        .icon-btn.stop:hover {
-            background: #d32f2f;
-            transform: scale(1.1);
-            box-shadow: 0 4px 12px rgba(244, 67, 54, 0.4);
+        .zone-start-btn {
+            flex: 1;
+            background: var(--ok);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 16px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: background 0.15s ease;
+        }
+        .zone-start-btn:hover { background: var(--ok-dark); }
+        .zone-start-btn:disabled {
+            background: #bbb;
+            cursor: not-allowed;
+        }
+
+        .zone-stop-btn {
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 16px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: background 0.15s ease;
+        }
+        .zone-stop-btn:hover { background: var(--danger-dark); }
+
+        /* --- Zone running mini-countdown --- */
+        .zone-countdown {
+            font-size: 0.8rem;
+            color: var(--ok-dark);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* --- Toast messages --- */
+        .messages {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-width: 360px;
         }
 
         .message {
-            padding: 16px;
-            margin: 16px 0;
+            padding: 12px 16px;
             border-radius: 8px;
             display: flex;
             align-items: center;
             gap: 8px;
-            animation: slideIn 0.3s ease;
+            animation: slideIn 0.25s ease;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+            background: white;
+            font-size: 0.9rem;
         }
-
-        .message.success {
-            background: #e8f5e8;
-            color: #2e7d32;
-            border-left: 4px solid #4caf50;
-        }
-
-        .message.error {
-            background: #ffebee;
-            color: #c62828;
-            border-left: 4px solid #f44336;
-        }
+        .message.success { border-left: 4px solid var(--ok); color: #1b5e20; }
+        .message.error { border-left: 4px solid var(--danger); color: #b71c1c; }
 
         @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
 
-        /* Mobile Responsiveness */
-        @media (max-width: 768px) {
-            .container {
-                padding: 12px;
-            }
-
-            .header {
-                padding: 20px 16px;
-            }
-
-            .header h1 {
-                font-size: 1.5rem;
-            }
-
-            .card {
-                padding: 16px;
-                margin-bottom: 16px;
-            }
-
-            .config-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .zones-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .zone-controls {
-                flex-wrap: wrap;
-                gap: 8px;
-            }
-
-            .status-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        @media (max-width: 480px) {
-            .zone-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 8px;
-            }
-
-            .zone-name-container {
-                width: 100%;
-            }
-
-            .zone-controls {
-                width: 100%;
-                justify-content: space-between;
-            }
-        }
-
-        /* Popup Styles */
+        /* --- Popup --- */
         .popup-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            inset: 0;
             background: rgba(0, 0, 0, 0.5);
             display: none;
             z-index: 1000;
             align-items: center;
             justify-content: center;
+            padding: 16px;
         }
+        .popup-overlay.visible { display: flex; }
 
         .popup-panel {
             background: white;
-            border-radius: 16px;
+            border-radius: 12px;
             padding: 24px;
-            max-width: 500px;
-            width: 90%;
-            max-height: 80vh;
+            max-width: 480px;
+            width: 100%;
+            max-height: 85vh;
             overflow-y: auto;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         }
@@ -422,13 +506,13 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
 
         .popup-title {
-            font-size: 1.25rem;
+            font-size: 1.1rem;
             font-weight: 500;
-            color: #1976d2;
+            color: var(--brand-dark);
             display: flex;
             align-items: center;
             gap: 8px;
@@ -437,580 +521,785 @@
         .close-btn {
             background: none;
             border: none;
-            font-size: 24px;
             cursor: pointer;
-            color: #666;
-            padding: 4px;
+            color: var(--text-muted);
+            padding: 6px;
             border-radius: 50%;
-            transition: background 0.2s ease;
+            display: flex;
+            transition: background 0.15s ease;
+        }
+        .close-btn:hover { background: var(--bg-subtle); }
+
+        .field {
+            margin-bottom: 14px;
+        }
+        .field label {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+        .field input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-family: inherit;
+        }
+        .field input:focus {
+            outline: none;
+            border-color: var(--brand);
         }
 
-        .close-btn:hover {
-            background: #f5f5f5;
+        .popup-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-family: inherit;
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-primary { background: var(--brand); color: white; }
+        .btn-primary:hover { background: var(--brand-dark); }
+        .btn-secondary { background: var(--bg-subtle); color: var(--text); }
+        .btn-secondary:hover { background: #e4e9ef; }
+
+        /* --- Mobile --- */
+        @media (max-width: 600px) {
+            .container { padding: 12px; }
+            .zones-grid { grid-template-columns: 1fr; }
+            .header h1 { font-size: 1.1rem; }
+            .active-banner-countdown { font-size: 2rem; }
+            .messages { top: 8px; right: 8px; left: 8px; max-width: none; }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1><span class="material-icons" style="vertical-align: middle; margin-right: 8px;">water_drop</span>RainBird Controller</h1>
-            <div class="subtitle">Smart Irrigation Management System</div>
+            <span class="material-icons">water_drop</span>
+            <h1>RainBird</h1>
+            <div class="header-status">
+                <span class="conn-dot" id="connDot" aria-hidden="true"></span>
+                <span id="connLabel">Connecting…</span>
+            </div>
+            <button class="icon-header-btn" onclick="openConfigPopup()" aria-label="Settings" title="Settings">
+                <span class="material-icons">settings</span>
+            </button>
         </div>
 
-        <div id="messages"></div>
+        <div class="messages" id="messages" aria-live="polite"></div>
 
-        <div class="card">
-            <div class="card-title">
-                <span class="material-icons">dashboard</span>
-                System Status
-                <button class="btn btn-secondary" onclick="openConfigPopup()" style="margin-left: auto;">
-                    <span class="material-icons">settings</span>
-                    Settings
-                </button>
-            </div>
-            <div id="statusDisplay" class="status-grid">
-                <div class="status-item">
-                    <div class="status-label">Irrigation</div>
-                    <div class="status-value">Loading...</div>
+        <!-- Active zone banner -->
+        <div class="active-banner" id="activeBanner" aria-live="polite">
+            <div class="active-banner-header">
+                <div>
+                    <div class="active-banner-label">Running now</div>
+                    <div class="active-banner-zone" id="activeBannerZone">—</div>
                 </div>
-                <div class="status-item">
-                    <div class="status-label">Active Zone</div>
-                    <div class="status-value">-</div>
-                </div>
-                <div class="status-item">
-                    <div class="status-label">Rain Sensor</div>
-                    <div class="status-value">-</div>
-                </div>
-                <div class="status-item">
-                    <div class="status-label">Controller</div>
-                    <div class="status-value">-</div>
-                </div>
-                <div class="status-item">
-                    <div class="status-label">Connection</div>
-                    <div class="status-value" id="connectionStatus">-</div>
-                </div>
-                <div class="status-item">
-                    <div class="status-label">Last Update</div>
-                    <div class="status-value" id="lastUpdate">-</div>
+                <div>
+                    <div class="active-banner-countdown-label">Time left</div>
+                    <div class="active-banner-countdown" id="activeBannerCountdown">--:--</div>
                 </div>
             </div>
-            <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px;">
-                <button class="btn btn-primary" onclick="stopAllZones()">
-                    <span class="material-icons">stop</span>
-                    Emergency Stop All
-                </button>
-                <button class="btn btn-secondary" onclick="openDiagnosticsPopup()">
-                    <span class="material-icons">bug_report</span>
-                    Diagnostics
-                </button>
-                <button class="btn btn-secondary" onclick="toggleRainSensorOverride()">
-                    <span class="material-icons">cloud</span>
-                    Rain Override
-                </button>
+            <div class="progress-bar">
+                <div class="progress-bar-fill" id="activeBannerProgress" style="width: 0%"></div>
             </div>
+            <button class="active-banner-stop" onclick="stopAllZones()" aria-label="Stop irrigation">
+                <span class="material-icons">stop</span>
+                Stop
+            </button>
         </div>
 
+        <!-- Zones -->
         <div class="card">
             <div class="card-title">
                 <span class="material-icons">grass</span>
-                Irrigation Zones
+                Zones
+            </div>
+            <div class="zone-toolbar" id="zoneToolbar" style="display: none;">
+                <input type="search" class="zone-search" id="zoneSearch"
+                       placeholder="Search zones…" aria-label="Search zones">
             </div>
             <div class="zones-grid" id="zonesList">
-                <div style="text-align: center; padding: 40px; color: #666;">
-                    <span class="material-icons" style="font-size: 48px; opacity: 0.5;">hourglass_empty</span>
-                    <div>Loading zones...</div>
+                <div class="empty-state">
+                    <span class="material-icons">hourglass_empty</span>
+                    <div>Loading zones…</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Configuration Popup -->
-    <div class="popup-overlay" id="configPopup">
+    <!-- Settings popup -->
+    <div class="popup-overlay" id="configPopup" role="dialog" aria-labelledby="configTitle">
         <div class="popup-panel">
             <div class="popup-header">
-                <div class="popup-title">
+                <div class="popup-title" id="configTitle">
                     <span class="material-icons">settings</span>
-                    Configuration Settings
+                    Settings
                 </div>
-                <button class="close-btn" onclick="closeConfigPopup()">
+                <button class="close-btn" onclick="closeConfigPopup()" aria-label="Close">
                     <span class="material-icons">close</span>
                 </button>
             </div>
-            <div class="config-grid">
-                <div class="input-group">
-                    <input type="text" id="controllerIp" placeholder=" ">
-                    <label>Controller IP Address</label>
+            <div class="field">
+                <label for="controllerIp">Controller IP address</label>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <input type="text" id="controllerIp" inputmode="numeric" placeholder="192.168.1.100" style="flex:1;">
+                    <button class="btn btn-secondary" id="scanBtn" onclick="scanForControllers()" title="Scan LAN for RainBird controllers" style="white-space:nowrap;flex-shrink:0;">
+                        <span class="material-icons" style="font-size:18px;">wifi_find</span>
+                        Scan
+                    </button>
                 </div>
-                <div class="input-group">
-                    <input type="password" id="controllerPassword" placeholder=" ">
-                    <label>Password</label>
-                </div>
-                <div class="input-group">
-                    <input type="number" id="refreshRate" min="1" max="60" placeholder=" ">
-                    <label>Refresh Rate (seconds)</label>
-                </div>
+                <div id="scanResults" style="display:none;margin-top:8px;border:1px solid var(--border);border-radius:6px;overflow:hidden;"></div>
             </div>
-            <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px;">
+            <div class="field">
+                <label for="controllerPassword">Password</label>
+                <input type="password" id="controllerPassword" placeholder="Controller password">
+            </div>
+            <div class="field">
+                <label for="refreshRate">Refresh interval (seconds)</label>
+                <input type="number" id="refreshRate" min="2" max="60" placeholder="10">
+            </div>
+            <div class="field">
+                <label for="visibleZonesInput">Visible zones (comma-separated, 1–19)</label>
+                <input type="text" id="visibleZonesInput" placeholder="1, 2, 3">
+            </div>
+            <div class="popup-actions">
+                <button class="btn btn-secondary" onclick="closeConfigPopup()">Cancel</button>
                 <button class="btn btn-primary" onclick="saveConfigAndClose()">
                     <span class="material-icons">save</span>
-                    Save & Close
-                </button>
-                <button class="btn btn-secondary" onclick="closeConfigPopup()">
-                    <span class="material-icons">close</span>
-                    Cancel
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Diagnostics Popup -->
-    <div class="popup-overlay" id="diagnosticsPopup">
-        <div class="popup-panel">
-            <div class="popup-header">
-                <div class="popup-title">
-                    <span class="material-icons">bug_report</span>
-                    System Diagnostics
-                </div>
-                <button class="close-btn" onclick="closeDiagnosticsPopup()">
-                    <span class="material-icons">close</span>
-                </button>
-            </div>
-            <div id="diagnosticsContent">
-                <div style="text-align: center; padding: 20px;">
-                    <span class="material-icons" style="font-size: 48px; opacity: 0.5;">hourglass_empty</span>
-                    <div>Loading diagnostics...</div>
-                </div>
-            </div>
-            <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px;">
-                <button class="btn btn-primary" onclick="refreshDiagnostics()">
-                    <span class="material-icons">refresh</span>
-                    Refresh
-                </button>
-                <button class="btn btn-secondary" onclick="closeDiagnosticsPopup()">
-                    <span class="material-icons">close</span>
-                    Close
+                    Save
                 </button>
             </div>
         </div>
     </div>
 
     <script>
-        // Load zones and config on page load
-        let statusInterval;
-        window.addEventListener('load', () => {
-            loadZones();
-            loadConfig();
+        // --- State ---
+        const DEFAULT_DURATIONS = [5, 10, 15, 30, 45];
+        const LAST_DURATION_KEY = 'rainbird_last_duration_per_zone';
+        const VISIBLE_ZONES_KEY = 'rainbird_visible_zones';
+
+        let allZones = [];          // [{id, name}]
+        let visibleZoneIds = [];    // subset of zones to render
+        let lastDurationByZone = loadLastDurations();
+        let selectedDurationByZone = {}; // in-memory, falls back to last/10
+
+        let activeZone = null;      // {zone_id, name, time_remaining, duration_seconds}
+        let refreshIntervalSec = 10;
+        let statusTimer = null;
+        let countdownTimer = null;
+        let searchFilter = '';
+        let controllerConfigured = false;
+
+        // --- Utilities ---
+        function loadLastDurations() {
+            try { return JSON.parse(localStorage.getItem(LAST_DURATION_KEY) || '{}'); }
+            catch { return {}; }
+        }
+        function saveLastDurations() {
+            localStorage.setItem(LAST_DURATION_KEY, JSON.stringify(lastDurationByZone));
+        }
+
+        function loadVisibleZones() {
+            try {
+                const stored = JSON.parse(localStorage.getItem(VISIBLE_ZONES_KEY) || 'null');
+                if (Array.isArray(stored) && stored.length) return stored;
+            } catch {}
+            return null;
+        }
+        function saveVisibleZones(ids) {
+            localStorage.setItem(VISIBLE_ZONES_KEY, JSON.stringify(ids));
+        }
+
+        function formatTime(seconds) {
+            if (seconds == null || seconds <= 0) return '--:--';
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            return `${m}:${s.toString().padStart(2, '0')}`;
+        }
+
+        function getDurationForZone(zoneId) {
+            return selectedDurationByZone[zoneId]
+                ?? lastDurationByZone[zoneId]
+                ?? 10;
+        }
+
+        // --- Init ---
+        window.addEventListener('load', async () => {
+            await loadConfigThenZones();
             startStatusMonitoring();
+            document.addEventListener('visibilitychange', handleVisibilityChange);
         });
 
-        async function loadZones() {
-            try {
-                const response = await fetch('/api/zones');
-                const result = await response.json();
-                
-                if (result.success) {
-                    displayZones(result.zones);
-                } else {
-                    showMessage(`Error loading zones: ${result.error}`, 'error');
-                }
-            } catch (error) {
-                showMessage(`Failed to load zones: ${error.message}`, 'error');
+        async function loadConfigThenZones() {
+            await loadConfig();
+            await loadZones();
+            renderZones();
+        }
+
+        function handleVisibilityChange() {
+            if (document.hidden) {
+                if (statusTimer) { clearInterval(statusTimer); statusTimer = null; }
+            } else if (!statusTimer) {
+                startStatusMonitoring();
             }
         }
 
-        function displayZones(zones) {
-            const zonesList = document.getElementById('zonesList');
-            let html = '';
-
-            zones.forEach(zone => {
-                html += `
-                    <div class="zone-card" id="zone-card-${zone.id}">
-                        <div class="zone-header">
-                            <div class="zone-name-container">
-                                <span class="material-icons" style="color: #4caf50;">grass</span>
-                                <input type="text" class="zone-name-input" id="name-${zone.id}" 
-                                       value="${zone.name}" onchange="updateZoneName(${zone.id}, this.value)">
-                            </div>
-                            <span class="zone-status inactive" id="status-${zone.id}">Inactive</span>
-                        </div>
-                        <div class="zone-controls">
-                            <input type="number" class="duration-input" id="duration-${zone.id}" 
-                                   min="1" max="60" value="10" placeholder="Min">
-                            <button class="icon-btn start" onclick="startZone(${zone.id})" title="Start Zone">
-                                <span class="material-icons">play_arrow</span>
-                            </button>
-                            <button class="icon-btn stop" onclick="stopZone(${zone.id})" title="Stop Zone">
-                                <span class="material-icons">stop</span>
-                            </button>
-                        </div>
-                    </div>
-                `;
-            });
-
-            zonesList.innerHTML = html;
-        }
-
-        async function startZone(zoneId) {
-            const durationInput = document.getElementById(`duration-${zoneId}`);
-            const duration = parseInt(durationInput.value) || 10;
-
-            try {
-                const response = await fetch('/api/zones/start', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ zone_id: zoneId, duration: duration })
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    showMessage(result.message, 'success');
-                    updateZoneStatus(zoneId, 'active');
-                } else {
-                    showMessage(`Error: ${result.error}`, 'error');
-                }
-            } catch (error) {
-                showMessage(`Failed to start zone: ${error.message}`, 'error');
-            }
-        }
-
-        async function stopZone(zoneId) {
-            try {
-                const response = await fetch('/api/zones/stop', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ zone_id: zoneId })
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    showMessage(result.message, 'success');
-                    updateZoneStatus(zoneId, 'inactive');
-                } else {
-                    showMessage(`Error: ${result.error}`, 'error');
-                }
-            } catch (error) {
-                showMessage(`Failed to stop zone: ${error.message}`, 'error');
-            }
-        }
-
-        function updateZoneStatus(zoneId, status) {
-            const statusEl = document.getElementById(`status-${zoneId}`);
-            const cardEl = document.getElementById(`zone-card-${zoneId}`);
-            
-            if (statusEl && cardEl) {
-                statusEl.textContent = status === 'active' ? 'Running' : 'Inactive';
-                statusEl.className = `zone-status ${status}`;
-                
-                if (status === 'active') {
-                    cardEl.classList.add('running');
-                } else {
-                    cardEl.classList.remove('running');
-                }
-            }
-        }
-
+        // --- Config ---
         async function loadConfig() {
             try {
-                const response = await fetch('/api/settings', {
+                const res = await fetch('/api/settings', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'load' })
                 });
-                const result = await response.json();
-                
-                if (result.success) {
-                    document.getElementById('controllerIp').value = result.settings.controller_ip || '';
-                    document.getElementById('controllerPassword').value = result.settings.controller_password || '';
-                    document.getElementById('refreshRate').value = result.settings.refresh_interval || 5;
+                const data = await res.json();
+                if (data.success) {
+                    const s = data.settings || {};
+                    refreshIntervalSec = parseInt(s.refresh_interval) || 10;
+                    controllerConfigured = !!(s.controller_ip && s.controller_password);
+
+                    document.getElementById('controllerIp').value = s.controller_ip || '';
+                    document.getElementById('controllerPassword').value = s.controller_password || '';
+                    document.getElementById('refreshRate').value = refreshIntervalSec;
+
+                    const visibleFromServer = Array.isArray(s.visible_zones) ? s.visible_zones : null;
+                    const visibleFromLocal = loadVisibleZones();
+                    visibleZoneIds = visibleFromServer
+                        || visibleFromLocal
+                        || deriveVisibleFromNames(s.zone_names);
+
+                    document.getElementById('visibleZonesInput').value = visibleZoneIds.join(', ');
                 }
-            } catch (error) {
-                showMessage(`Failed to load config: ${error.message}`, 'error');
+            } catch (e) {
+                console.warn('loadConfig failed', e);
             }
+        }
+
+        function deriveVisibleFromNames(zoneNames) {
+            if (zoneNames && Object.keys(zoneNames).length) {
+                return Object.keys(zoneNames).map(n => parseInt(n)).sort((a, b) => a - b);
+            }
+            // First-run fallback: show zones 1-4 until configured
+            return [1, 2, 3, 4];
         }
 
         async function saveConfig() {
+            const visibleRaw = document.getElementById('visibleZonesInput').value || '';
+            const parsedVisible = visibleRaw
+                .split(',')
+                .map(s => parseInt(s.trim()))
+                .filter(n => Number.isInteger(n) && n >= 1 && n <= 19);
+
             const settings = {
-                controller_ip: document.getElementById('controllerIp').value,
+                controller_ip: document.getElementById('controllerIp').value.trim(),
                 controller_password: document.getElementById('controllerPassword').value,
-                timeout: 10,
-                auto_connect: false,
-                refresh_interval: parseInt(document.getElementById('refreshRate').value) || 5,
-                zone_names: {}
+                refresh_interval: parseInt(document.getElementById('refreshRate').value) || 10,
+                visible_zones: parsedVisible
             };
 
             try {
-                const response = await fetch('/api/settings', {
+                const res = await fetch('/api/settings', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'save', settings: settings })
+                    body: JSON.stringify({ action: 'save', settings })
                 });
-                const result = await response.json();
-                
-                if (result.success) {
-                    showMessage('Configuration saved successfully', 'success');
-                    restartStatusMonitoring();
-                } else {
-                    showMessage('Failed to save configuration', 'error');
-                }
-            } catch (error) {
-                showMessage(`Failed to save config: ${error.message}`, 'error');
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error || 'save failed');
+                saveVisibleZones(parsedVisible);
+                showMessage('Settings saved', 'success');
+                refreshIntervalSec = settings.refresh_interval;
+                controllerConfigured = !!(settings.controller_ip && settings.controller_password);
+                visibleZoneIds = parsedVisible.length ? parsedVisible : visibleZoneIds;
+                renderZones();
+                restartStatusMonitoring();
+            } catch (e) {
+                showMessage(`Failed to save settings: ${e.message}`, 'error');
             }
         }
 
-        async function updateZoneName(zoneId, newName) {
+        // --- Zones ---
+        async function loadZones() {
             try {
-                const response = await fetch('/api/settings', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'update-zone-name', zone_id: zoneId, name: newName })
-                });
-                const result = await response.json();
-                
-                if (result.success) {
-                    showMessage(`Zone ${zoneId} name updated`, 'success');
-                } else {
-                    showMessage('Failed to update zone name', 'error');
-                }
-            } catch (error) {
-                showMessage(`Failed to update zone name: ${error.message}`, 'error');
-            }
-        }
-
-        async function getStatus() {
-            try {
-                const response = await fetch('/api/status');
-                const data = await response.json();
-                
+                const res = await fetch('/api/zones');
+                const data = await res.json();
                 if (data.success) {
-                    const status = data.status;
-                    const statusDisplay = document.getElementById('statusDisplay');
-                    
-                    statusDisplay.innerHTML = `
-                        <div class="status-item ${status.irrigation_state.active ? 'active' : ''}">
-                            <div class="status-label">Irrigation</div>
-                            <div class="status-value">${status.irrigation_state.active ? 'ACTIVE' : 'INACTIVE'}</div>
-                        </div>
-                        <div class="status-item">
-                            <div class="status-label">Active Zone</div>
-                            <div class="status-value">${status.irrigation_state.zone || 'None'}</div>
-                        </div>
-                        <div class="status-item">
-                            <div class="status-label">Rain Sensor</div>
-                            <div class="status-value">${status.rain_sensor.status.toUpperCase()}</div>
-                        </div>
-                        <div class="status-item">
-                            <div class="status-label">Controller</div>
-                            <div class="status-value">${status.model_info.model} v${status.model_info.version}</div>
-                        </div>
-                        <div class="status-item" id="connectionStatusItem">
-                            <div class="status-label">Connection</div>
-                            <div class="status-value" id="connectionStatus">CHECKING...</div>
-                        </div>
-                        <div class="status-item">
-                            <div class="status-label">Last Update</div>
-                            <div class="status-value" id="lastUpdate">${new Date().toLocaleTimeString()}</div>
-                        </div>
-                    `;
-                    
-                    // Update connection status separately
-                    getConnectionStatus();
-                    
-                    // Update zone statuses
-                    for (let i = 1; i <= 19; i++) {
-                        const statusEl = document.getElementById(`status-${i}`);
-                        const cardEl = document.getElementById(`zone-card-${i}`);
-                        if (statusEl && cardEl) {
-                            if (status.irrigation_state.active && status.irrigation_state.zone === i) {
-                                updateZoneStatus(i, 'active');
-                            } else {
-                                updateZoneStatus(i, 'inactive');
-                            }
-                        }
-                    }
+                    allZones = data.zones;
                 } else {
-                    document.getElementById('statusDisplay').innerHTML = `
-                        <div class="status-item">
-                            <div class="status-label">Error</div>
-                            <div class="status-value">${data.error}</div>
-                        </div>
-                    `;
+                    showMessage(`Error loading zones: ${data.error}`, 'error');
                 }
-            } catch (error) {
-                document.getElementById('statusDisplay').innerHTML = `
-                    <div class="status-item">
-                        <div class="status-label">Connection Error</div>
-                        <div class="status-value">${error.message}</div>
-                    </div>
-                `;
+            } catch (e) {
+                showMessage(`Failed to load zones: ${e.message}`, 'error');
             }
         }
 
+        function renderZones() {
+            const container = document.getElementById('zonesList');
+            const toolbar = document.getElementById('zoneToolbar');
+
+            if (!controllerConfigured) {
+                toolbar.style.display = 'none';
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <span class="material-icons">settings_input_antenna</span>
+                        <div class="empty-state-title">Connect your controller</div>
+                        <div class="empty-state-body">
+                            Enter your RainBird controller's IP address and password to get started.
+                        </div>
+                        <button class="btn btn-primary" onclick="openConfigPopup()">
+                            <span class="material-icons">settings</span>
+                            Open settings
+                        </button>
+                    </div>`;
+                return;
+            }
+
+            if (!visibleZoneIds.length) {
+                toolbar.style.display = 'none';
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <span class="material-icons">grass</span>
+                        <div class="empty-state-title">No zones configured</div>
+                        <div class="empty-state-body">
+                            Add the zone numbers you want to control in settings.
+                        </div>
+                        <button class="btn btn-primary" onclick="openConfigPopup()">
+                            <span class="material-icons">settings</span>
+                            Choose zones
+                        </button>
+                    </div>`;
+                return;
+            }
+
+            // Show toolbar only when there are enough zones to benefit
+            toolbar.style.display = visibleZoneIds.length > 6 ? 'flex' : 'none';
+
+            const zoneById = Object.fromEntries(allZones.map(z => [z.id, z]));
+            const filtered = visibleZoneIds
+                .map(id => zoneById[id])
+                .filter(z => z)
+                .filter(z => !searchFilter || z.name.toLowerCase().includes(searchFilter));
+
+            if (!filtered.length) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <span class="material-icons">search_off</span>
+                        <div>No zones match "${escapeHtml(searchFilter)}"</div>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map(renderZoneCard).join('');
+        }
+
+        function renderZoneCard(zone) {
+            const isActive = activeZone && activeZone.zone_id === zone.id;
+            const duration = getDurationForZone(zone.id);
+            const presetChips = DEFAULT_DURATIONS.map(m => `
+                <button type="button" class="chip ${m === duration ? 'selected' : ''}"
+                        onclick="selectDuration(${zone.id}, ${m})"
+                        aria-pressed="${m === duration}">${m}m</button>
+            `).join('');
+            const isCustom = !DEFAULT_DURATIONS.includes(duration);
+
+            const runningMeta = isActive ? `
+                <div class="zone-countdown" aria-label="Time remaining">
+                    <span class="material-icons" style="font-size: 16px;">timer</span>
+                    <span id="zone-countdown-${zone.id}">${formatTime(activeZone.time_remaining)}</span>
+                </div>
+            ` : '';
+
+            return `
+                <div class="zone-card ${isActive ? 'running' : ''}" id="zone-card-${zone.id}">
+                    <div class="zone-header">
+                        <span class="zone-num">Z${zone.id}</span>
+                        <span class="zone-name" id="zone-name-${zone.id}">${escapeHtml(zone.name)}</span>
+                        <span class="zone-saved-hint" id="zone-saved-${zone.id}">Saved</span>
+                        <button class="zone-edit-btn" onclick="editZoneName(${zone.id})"
+                                aria-label="Rename zone ${zone.id}" title="Rename">
+                            <span class="material-icons" style="font-size: 18px;">edit</span>
+                        </button>
+                    </div>
+                    ${isActive ? runningMeta : `
+                        <div class="duration-chips" role="group" aria-label="Duration">
+                            ${presetChips}
+                            <label class="chip custom ${isCustom ? 'selected' : ''}" title="Custom duration">
+                                <input type="number" class="chip-input" min="1" max="60"
+                                       value="${isCustom ? duration : ''}"
+                                       placeholder="…"
+                                       aria-label="Custom minutes for zone ${zone.id}"
+                                       onchange="selectCustomDuration(${zone.id}, this.value)">
+                                m
+                            </label>
+                        </div>
+                    `}
+                    <div class="zone-actions">
+                        ${isActive
+                            ? `<button class="zone-stop-btn" onclick="stopAllZones()" style="flex:1;">
+                                   <span class="material-icons">stop</span>
+                                   Stop
+                               </button>`
+                            : `<button class="zone-start-btn" onclick="startZone(${zone.id})"
+                                       ${activeZone ? 'disabled title="Another zone is running"' : ''}>
+                                   <span class="material-icons">play_arrow</span>
+                                   Start ${duration}m
+                               </button>`
+                        }
+                    </div>
+                </div>
+            `;
+        }
+
+        function escapeHtml(str) {
+            return String(str).replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+
+        function selectDuration(zoneId, minutes) {
+            selectedDurationByZone[zoneId] = minutes;
+            lastDurationByZone[zoneId] = minutes;
+            saveLastDurations();
+            renderZones();
+        }
+
+        function selectCustomDuration(zoneId, raw) {
+            const m = parseInt(raw);
+            if (!Number.isFinite(m) || m < 1 || m > 60) return;
+            selectedDurationByZone[zoneId] = m;
+            lastDurationByZone[zoneId] = m;
+            saveLastDurations();
+            renderZones();
+        }
+
+        function editZoneName(zoneId) {
+            const zone = allZones.find(z => z.id === zoneId);
+            if (!zone) return;
+            const nameEl = document.getElementById(`zone-name-${zoneId}`);
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'zone-name-input';
+            input.value = zone.name;
+            input.setAttribute('aria-label', `Zone ${zoneId} name`);
+            nameEl.replaceWith(input);
+            input.focus();
+            input.select();
+
+            const commit = async () => {
+                input.removeEventListener('blur', commit);
+                input.removeEventListener('keydown', onKey);
+                const newName = input.value.trim() || `Zone ${zoneId}`;
+                if (newName !== zone.name) {
+                    zone.name = newName;
+                    await saveZoneName(zoneId, newName);
+                }
+                renderZones();
+            };
+            const onKey = (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+                else if (e.key === 'Escape') { input.value = zone.name; input.blur(); }
+            };
+            input.addEventListener('blur', commit);
+            input.addEventListener('keydown', onKey);
+        }
+
+        async function saveZoneName(zoneId, name) {
+            try {
+                const res = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'update-zone-name', zone_id: zoneId, name })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showSavedHint(zoneId);
+                } else {
+                    showMessage('Failed to save zone name', 'error');
+                }
+            } catch (e) {
+                showMessage(`Failed to save zone name: ${e.message}`, 'error');
+            }
+        }
+
+        function showSavedHint(zoneId) {
+            setTimeout(() => {
+                const hint = document.getElementById(`zone-saved-${zoneId}`);
+                if (!hint) return;
+                hint.classList.add('visible');
+                setTimeout(() => hint.classList.remove('visible'), 1200);
+            }, 50);
+        }
+
+        // --- Start / stop ---
+        async function startZone(zoneId) {
+            const duration = getDurationForZone(zoneId);
+            lastDurationByZone[zoneId] = duration;
+            saveLastDurations();
+
+            try {
+                const res = await fetch('/api/zones/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ zone_id: zoneId, duration })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showMessage(data.message || `Zone ${zoneId} started`, 'success');
+                    const zone = allZones.find(z => z.id === zoneId);
+                    activeZone = {
+                        zone_id: zoneId,
+                        name: zone ? zone.name : `Zone ${zoneId}`,
+                        time_remaining: duration * 60,
+                        duration_seconds: duration * 60
+                    };
+                    renderZones();
+                    renderActiveBanner();
+                    startCountdown();
+                    getStatus();
+                } else {
+                    showMessage(`Error: ${data.error}`, 'error');
+                }
+            } catch (e) {
+                showMessage(`Failed to start zone: ${e.message}`, 'error');
+            }
+        }
+
+        async function stopAllZones() {
+            try {
+                const res = await fetch('/api/zones/stop-all', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showMessage(data.message || 'Stopped', 'success');
+                    activeZone = null;
+                    renderZones();
+                    renderActiveBanner();
+                } else {
+                    showMessage(`Error: ${data.error}`, 'error');
+                }
+            } catch (e) {
+                showMessage(`Failed to stop: ${e.message}`, 'error');
+            }
+        }
+
+        // --- Status polling ---
         function startStatusMonitoring() {
-            getStatus(); // Get initial status
-            const refreshRate = parseInt(document.getElementById('refreshRate').value) || 5;
-            statusInterval = setInterval(getStatus, refreshRate * 1000);
+            getStatus();
+            statusTimer = setInterval(getStatus, Math.max(2, refreshIntervalSec) * 1000);
         }
 
         function restartStatusMonitoring() {
-            if (statusInterval) clearInterval(statusInterval);
+            if (statusTimer) clearInterval(statusTimer);
             startStatusMonitoring();
         }
 
-        function showMessage(message, type = 'info') {
-            const messagesDiv = document.getElementById('messages');
-            const messageEl = document.createElement('div');
-            messageEl.className = `message ${type}`;
-            
-            const icon = type === 'success' ? 'check_circle' : 'error';
-            messageEl.innerHTML = `
-                <span class="material-icons">${icon}</span>
-                ${message}
-            `;
-            
-            messagesDiv.appendChild(messageEl);
+        async function getStatus() {
+            if (!controllerConfigured) {
+                setConnDot('idle', 'Not configured');
+                return;
+            }
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
 
-            // Remove message after 5 seconds
-            setTimeout(() => {
-                messageEl.remove();
-            }, 5000);
+                if (!data.success) {
+                    setConnDot('err', 'Error');
+                    return;
+                }
+                setConnDot('ok', 'Connected');
+
+                const state = data.status.irrigation_state;
+                if (state.active && state.zone) {
+                    const zone = allZones.find(z => z.id === state.zone);
+                    const prev = activeZone;
+                    activeZone = {
+                        zone_id: state.zone,
+                        name: zone ? zone.name : `Zone ${state.zone}`,
+                        time_remaining: state.time_remaining,
+                        // Preserve original duration across polls so progress bar doesn't jump
+                        duration_seconds: prev && prev.zone_id === state.zone
+                            ? prev.duration_seconds
+                            : Math.max(state.time_remaining, 1)
+                    };
+                    renderActiveBanner();
+                    startCountdown();
+                } else if (activeZone) {
+                    activeZone = null;
+                    renderZones();
+                    renderActiveBanner();
+                }
+            } catch (e) {
+                setConnDot('err', 'Disconnected');
+            }
         }
 
+        function setConnDot(state, label) {
+            const dot = document.getElementById('connDot');
+            const lbl = document.getElementById('connLabel');
+            dot.classList.remove('ok', 'err');
+            if (state === 'ok') dot.classList.add('ok');
+            else if (state === 'err') dot.classList.add('err');
+            lbl.textContent = label;
+        }
+
+        // --- Active banner + countdown ---
+        function renderActiveBanner() {
+            const banner = document.getElementById('activeBanner');
+            if (!activeZone) {
+                banner.classList.remove('visible');
+                if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+                return;
+            }
+            banner.classList.add('visible');
+            document.getElementById('activeBannerZone').textContent =
+                `${activeZone.name} · Z${activeZone.zone_id}`;
+            updateCountdownUI();
+        }
+
+        function updateCountdownUI() {
+            if (!activeZone) return;
+            document.getElementById('activeBannerCountdown').textContent =
+                formatTime(activeZone.time_remaining);
+            const pct = activeZone.duration_seconds > 0
+                ? Math.max(0, Math.min(100,
+                    100 - (activeZone.time_remaining / activeZone.duration_seconds) * 100))
+                : 0;
+            document.getElementById('activeBannerProgress').style.width = pct + '%';
+
+            const zoneCountEl = document.getElementById(`zone-countdown-${activeZone.zone_id}`);
+            if (zoneCountEl) zoneCountEl.textContent = formatTime(activeZone.time_remaining);
+        }
+
+        function startCountdown() {
+            if (countdownTimer) clearInterval(countdownTimer);
+            countdownTimer = setInterval(() => {
+                if (!activeZone) {
+                    clearInterval(countdownTimer); countdownTimer = null; return;
+                }
+                activeZone.time_remaining = Math.max(0, activeZone.time_remaining - 1);
+                updateCountdownUI();
+                if (activeZone.time_remaining <= 0) {
+                    clearInterval(countdownTimer); countdownTimer = null;
+                    // Force a status refresh to confirm the zone actually stopped
+                    setTimeout(getStatus, 1500);
+                }
+            }, 1000);
+        }
+
+        // --- Messages ---
+        function showMessage(message, type = 'success') {
+            const container = document.getElementById('messages');
+            const el = document.createElement('div');
+            el.className = `message ${type}`;
+            const icon = type === 'success' ? 'check_circle' : 'error';
+            el.innerHTML = `<span class="material-icons">${icon}</span><span></span>`;
+            el.querySelector('span:last-child').textContent = message;
+            container.appendChild(el);
+            setTimeout(() => {
+                el.style.opacity = '0';
+                el.style.transition = 'opacity 0.3s ease';
+                setTimeout(() => el.remove(), 300);
+            }, 3500);
+        }
+
+        // --- Popups ---
         function openConfigPopup() {
             loadConfig();
-            document.getElementById('configPopup').style.display = 'flex';
+            document.getElementById('scanResults').style.display = 'none';
+            document.getElementById('configPopup').classList.add('visible');
         }
-
         function closeConfigPopup() {
-            document.getElementById('configPopup').style.display = 'none';
+            document.getElementById('configPopup').classList.remove('visible');
         }
-
         async function saveConfigAndClose() {
             await saveConfig();
             closeConfigPopup();
         }
 
-        // New Features Implementation
-        let rainSensorOverride = false;
+        // --- LAN scan ---
+        async function scanForControllers() {
+            const btn = document.getElementById('scanBtn');
+            const resultsEl = document.getElementById('scanResults');
 
-        async function stopAllZones() {
-            if (!confirm('Stop all irrigation zones?')) return;
-            
+            btn.disabled = true;
+            btn.innerHTML = '<span class="material-icons" style="font-size:18px;animation:spin 1s linear infinite;">refresh</span> Scanning…';
+            resultsEl.style.display = 'none';
+            resultsEl.innerHTML = '';
+
             try {
-                const response = await fetch('/api/zones/stop-all', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({})
-                });
+                const res = await fetch('/api/scan');
+                const data = await res.json();
+                const controllers = data.controllers || [];
 
-                const result = await response.json();
-                
-                if (result.success) {
-                    showMessage(result.message, 'success');
-                    // Update all zone statuses
-                    for (let i = 1; i <= 19; i++) {
-                        updateZoneStatus(i, 'inactive');
-                    }
+                if (controllers.length === 0) {
+                    resultsEl.innerHTML = `
+                        <div style="padding:10px 12px;color:var(--text-muted);font-size:0.875rem;display:flex;align-items:center;gap:6px;">
+                            <span class="material-icons" style="font-size:16px;">search_off</span>
+                            No RainBird controllers found on this network
+                        </div>`;
                 } else {
-                    showMessage(`Error: ${result.error}`, 'error');
+                    resultsEl.innerHTML = controllers.map(ip => `
+                        <button onclick="selectScannedIp('${ip}')" style="
+                            display:flex;align-items:center;gap:8px;width:100%;padding:10px 12px;
+                            background:none;border:none;border-bottom:1px solid var(--border);
+                            cursor:pointer;font-size:0.9rem;color:var(--text);text-align:left;
+                            transition:background 0.15s ease;"
+                            onmouseover="this.style.background='var(--bg-subtle)'"
+                            onmouseout="this.style.background='none'">
+                            <span class="material-icons" style="font-size:18px;color:var(--ok);">router</span>
+                            ${ip}
+                            <span style="margin-left:auto;font-size:0.75rem;color:var(--text-muted);">tap to use</span>
+                        </button>`).join('');
+                    // Remove border from last item
+                    resultsEl.querySelector('button:last-child').style.borderBottom = 'none';
                 }
-            } catch (error) {
-                showMessage(`Failed to stop all zones: ${error.message}`, 'error');
+                resultsEl.style.display = 'block';
+            } catch (e) {
+                resultsEl.innerHTML = `
+                    <div style="padding:10px 12px;color:var(--danger);font-size:0.875rem;">
+                        Scan failed: ${e.message}
+                    </div>`;
+                resultsEl.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span class="material-icons" style="font-size:18px;">wifi_find</span> Scan';
             }
         }
 
-        async function toggleRainSensorOverride() {
-            rainSensorOverride = !rainSensorOverride;
-            
-            try {
-                const response = await fetch('/api/rain-sensor/override', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ override: rainSensorOverride })
-                });
+        function selectScannedIp(ip) {
+            document.getElementById('controllerIp').value = ip;
+            document.getElementById('scanResults').style.display = 'none';
+            document.getElementById('controllerPassword').focus();
+        }
 
-                const result = await response.json();
-                
-                if (result.success) {
-                    showMessage(result.message, 'success');
-                } else {
-                    showMessage(`Error: ${result.error}`, 'error');
-                }
-            } catch (error) {
-                showMessage(`Failed to toggle rain sensor: ${error.message}`, 'error');
+        // --- Search ---
+        document.addEventListener('input', (e) => {
+            if (e.target && e.target.id === 'zoneSearch') {
+                searchFilter = e.target.value.toLowerCase().trim();
+                renderZones();
             }
-        }
-
-        function openDiagnosticsPopup() {
-            document.getElementById('diagnosticsPopup').style.display = 'flex';
-            refreshDiagnostics();
-        }
-
-        function closeDiagnosticsPopup() {
-            document.getElementById('diagnosticsPopup').style.display = 'none';
-        }
-
-        async function refreshDiagnostics() {
-            const content = document.getElementById('diagnosticsContent');
-            content.innerHTML = '<div style="text-align: center; padding: 20px;"><span class="material-icons" style="font-size: 48px; opacity: 0.5;">hourglass_empty</span><div>Loading diagnostics...</div></div>';
-            
-            try {
-                const response = await fetch('/api/diagnostics');
-                const result = await response.json();
-                
-                if (result.success) {
-                    content.innerHTML = `
-                        <div class="status-grid">
-                            <div class="status-item ${result.controller_configured ? 'active' : ''}">
-                                <div class="status-label">Controller Config</div>
-                                <div class="status-value">${result.controller_configured ? 'YES' : 'NO'}</div>
-                            </div>
-                            <div class="status-item ${result.controller_reachable ? 'active' : ''}">
-                                <div class="status-label">Controller Reachable</div>
-                                <div class="status-value">${result.controller_reachable ? 'YES' : 'NO'}</div>
-                            </div>
-                            <div class="status-item">
-                                <div class="status-label">Active Sessions</div>
-                                <div class="status-value">${result.active_sessions}</div>
-                            </div>
-                            <div class="status-item">
-                                <div class="status-label">Zones Configured</div>
-                                <div class="status-value">${result.zones_configured}</div>
-                            </div>
-                        </div>
-                        <div style="margin-top: 16px; padding: 12px; background: #f5f5f5; border-radius: 8px;">
-                            <strong>Connection Test:</strong> ${result.connection_test}
-                        </div>
-                    `;
-                } else {
-                    content.innerHTML = `<div class="message error">Failed to load diagnostics: ${result.error}</div>`;
-                }
-            } catch (error) {
-                content.innerHTML = `<div class="message error">Error: ${error.message}</div>`;
-            }
-        }
-
-        async function getConnectionStatus() {
-            try {
-                const response = await fetch('/api/connection/status');
-                const result = await response.json();
-                
-                if (result.success) {
-                    const statusEl = document.getElementById('connectionStatus');
-                    if (statusEl) {
-                        statusEl.textContent = result.connected ? 'CONNECTED' : 'DISCONNECTED';
-                        statusEl.parentElement.className = `status-item ${result.connected ? 'active' : ''}`;
-                    }
-                }
-            } catch (error) {
-                const statusEl = document.getElementById('connectionStatus');
-                if (statusEl) {
-                    statusEl.textContent = 'ERROR';
-                    statusEl.parentElement.className = 'status-item';
-                }
-            }
-        }
+        });
     </script>
 </body>
 </html>

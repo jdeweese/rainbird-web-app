@@ -81,7 +81,10 @@ import json
 import os
 import asyncio
 import aiohttp
+import socket
+import ipaddress
 import time
+from concurrent.futures import ThreadPoolExecutor
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 from pyrainbird import async_client
@@ -190,6 +193,9 @@ class RainBirdHandler(BaseHTTPRequestHandler):
         elif path == '/api/diagnostics':
             # Get system diagnostics
             self.handle_diagnostics()
+        elif path == '/api/scan':
+            # Scan LAN for RainBird controllers
+            self.handle_scan()
         elif path.startswith('/'):
             # Serve static file (remove leading slash)
             self.serve_file(path[1:])
@@ -660,7 +666,92 @@ class RainBirdHandler(BaseHTTPRequestHandler):
         else:
             # Invalid action specified
             self.send_error(400, "Invalid action")
-    
+
+    def handle_scan(self):
+        """API endpoint: GET /api/scan - Discover RainBird controllers on the LAN.
+
+        Probes every host on the same /24 subnet the server is reachable from.
+        A host is considered a candidate if it accepts a TCP connection on port 80
+        within a short timeout, then we attempt a lightweight HTTP probe to confirm
+        it looks like a RainBird device (checks for the /stick endpoint).
+        """
+        try:
+            found = self._scan_for_controllers()
+            self.send_json_response({"success": True, "controllers": found})
+        except Exception as e:
+            self.send_json_response({"success": False, "error": str(e), "controllers": []})
+
+    def _scan_for_controllers(self):
+        """Scan the local /24 subnet for RainBird controllers."""
+        # Determine local subnet from the server's own IP
+        subnet = self._get_local_subnet()
+        if not subnet:
+            return []
+
+        network = ipaddress.IPv4Network(subnet, strict=False)
+        hosts = [str(h) for h in network.hosts()]
+
+        # Phase 1: TCP port-80 probe in parallel (fast, ~1s for /24)
+        open_hosts = []
+        with ThreadPoolExecutor(max_workers=64) as pool:
+            results = pool.map(self._tcp_probe, hosts)
+        for ip, reachable in zip(hosts, results):
+            if reachable:
+                open_hosts.append(ip)
+
+        # Phase 2: HTTP probe to confirm RainBird identity
+        controllers = []
+        with ThreadPoolExecutor(max_workers=16) as pool:
+            results = pool.map(self._rainbird_probe, open_hosts)
+        for ip, is_rainbird in zip(open_hosts, results):
+            if is_rainbird:
+                controllers.append(ip)
+
+        return controllers
+
+    def _get_local_subnet(self):
+        """Return the /24 subnet the server is on, e.g. '192.168.1.0/24'."""
+        try:
+            # Connect to a public address (no packet sent) just to find our outbound IP
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(('8.8.8.8', 80))
+            local_ip = s.getsockname()[0]
+            s.close()
+            # Derive /24 from local IP
+            network = ipaddress.IPv4Network(f"{local_ip}/24", strict=False)
+            return str(network)
+        except Exception:
+            return None
+
+    def _tcp_probe(self, ip, port=80, timeout=0.4):
+        """Return True if port 80 is open on ip within timeout seconds."""
+        try:
+            with socket.create_connection((ip, port), timeout=timeout):
+                return True
+        except Exception:
+            return False
+
+    def _rainbird_probe(self, ip, timeout=2.0):
+        """Return True if ip responds like a RainBird controller."""
+        import urllib.request
+        import urllib.error
+        try:
+            # RainBird controllers have a /stick endpoint that returns a short JSON blob
+            req = urllib.request.Request(
+                f"http://{ip}/stick",
+                headers={"User-Agent": "RainBirdScan/1.0"}
+            )
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                body = resp.read(512).decode(errors='ignore').lower()
+                # RainBird responses contain "stick" or "rainbird" in body/headers
+                ct = resp.headers.get('Content-Type', '').lower()
+                server = resp.headers.get('Server', '').lower()
+                return ('rainbird' in body or 'stick' in body or
+                        'rainbird' in server or 'lxi' in server or
+                        'application/json' in ct)
+        except Exception:
+            return False
+
     def run_async(self, coro):
         """Run async coroutine in sync context"""
         loop = asyncio.new_event_loop()
