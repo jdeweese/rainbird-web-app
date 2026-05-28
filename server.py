@@ -682,8 +682,13 @@ class RainBirdHandler(BaseHTTPRequestHandler):
             self.send_json_response({"success": False, "error": str(e), "controllers": []})
 
     def _scan_for_controllers(self):
-        """Scan the local /24 subnet for RainBird controllers."""
-        # Determine local subnet from the server's own IP
+        """Scan the local /24 subnet for RainBird controllers.
+
+        The ESP-ME3 uses a custom binary-over-HTTP protocol and doesn't return
+        any identifiable response to a plain HTTP GET, so we can't fingerprint
+        it reliably. Instead we return all hosts with port 80 open — on a home
+        /24 that's typically only a handful of devices.
+        """
         subnet = self._get_local_subnet()
         if not subnet:
             return []
@@ -691,7 +696,6 @@ class RainBirdHandler(BaseHTTPRequestHandler):
         network = ipaddress.IPv4Network(subnet, strict=False)
         hosts = [str(h) for h in network.hosts()]
 
-        # Phase 1: TCP port-80 probe in parallel (fast, ~1s for /24)
         open_hosts = []
         with ThreadPoolExecutor(max_workers=64) as pool:
             results = pool.map(self._tcp_probe, hosts)
@@ -699,15 +703,7 @@ class RainBirdHandler(BaseHTTPRequestHandler):
             if reachable:
                 open_hosts.append(ip)
 
-        # Phase 2: HTTP probe to confirm RainBird identity
-        controllers = []
-        with ThreadPoolExecutor(max_workers=16) as pool:
-            results = pool.map(self._rainbird_probe, open_hosts)
-        for ip, is_rainbird in zip(open_hosts, results):
-            if is_rainbird:
-                controllers.append(ip)
-
-        return controllers
+        return open_hosts
 
     def _get_local_subnet(self):
         """Return the /24 subnet the server is on, e.g. '192.168.1.0/24'."""
@@ -728,27 +724,6 @@ class RainBirdHandler(BaseHTTPRequestHandler):
         try:
             with socket.create_connection((ip, port), timeout=timeout):
                 return True
-        except Exception:
-            return False
-
-    def _rainbird_probe(self, ip, timeout=2.0):
-        """Return True if ip responds like a RainBird controller."""
-        import urllib.request
-        import urllib.error
-        try:
-            # RainBird controllers have a /stick endpoint that returns a short JSON blob
-            req = urllib.request.Request(
-                f"http://{ip}/stick",
-                headers={"User-Agent": "RainBirdScan/1.0"}
-            )
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
-                body = resp.read(512).decode(errors='ignore').lower()
-                # RainBird responses contain "stick" or "rainbird" in body/headers
-                ct = resp.headers.get('Content-Type', '').lower()
-                server = resp.headers.get('Server', '').lower()
-                return ('rainbird' in body or 'stick' in body or
-                        'rainbird' in server or 'lxi' in server or
-                        'application/json' in ct)
         except Exception:
             return False
 
