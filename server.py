@@ -89,6 +89,10 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 from pyrainbird import async_client
 
+# Default config path: next to this script (works locally and in Docker when
+# CONFIG_PATH env var is not set; Docker sets it to /app/config/config.json).
+_DEFAULT_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config", "config.json")
+
 # Global session management
 active_sessions = {}
 last_cleanup = time.time()
@@ -796,7 +800,7 @@ class RainBirdHandler(BaseHTTPRequestHandler):
 
     def load_settings(self):
         """Load application settings from config.json file."""
-        config_path = os.environ.get("CONFIG_PATH", "/app/config/config.json")
+        config_path = os.environ.get("CONFIG_PATH", _DEFAULT_CONFIG_PATH)
         try:
             with open(config_path, 'r') as f:
                 settings = json.load(f)
@@ -816,7 +820,7 @@ class RainBirdHandler(BaseHTTPRequestHandler):
 
     def save_settings(self, settings):
         """Save application settings to config.json file."""
-        config_path = os.environ.get("CONFIG_PATH", "/app/config/config.json")
+        config_path = os.environ.get("CONFIG_PATH", _DEFAULT_CONFIG_PATH)
         try:
             os.makedirs(os.path.dirname(config_path), exist_ok=True)
             with open(config_path, 'w') as f:
