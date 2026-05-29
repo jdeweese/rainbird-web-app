@@ -236,6 +236,58 @@
         }
         .btn-stop:hover { background: var(--danger); color: #fff; }
 
+        /* ── Config mode ───────────────────────────────── */
+        .config-bar {
+            background: #fff8e1;
+            border: 1px solid #ffe082;
+            border-left: 4px solid var(--warn);
+            border-radius: var(--radius);
+            padding: 10px 16px;
+            margin-bottom: 16px;
+            display: flex; align-items: center; gap: 12px;
+            font-size: 13px; color: #5d4037;
+        }
+        .config-bar .material-icons { font-size: 18px; color: var(--warn); flex-shrink: 0; }
+        .config-bar-text { flex: 1; }
+
+        .btn-done {
+            background: var(--warn); color: #fff; border: none;
+            border-radius: 8px; padding: 6px 16px;
+            font-size: 13px; font-weight: 500; cursor: pointer;
+            display: flex; align-items: center; gap: 4px;
+            transition: background .2s; white-space: nowrap; flex-shrink: 0;
+        }
+        .btn-done:hover { background: #c76300; }
+
+        .zone-card.zone-hidden {
+            opacity: .45;
+            border-style: dashed;
+        }
+        .zone-card.zone-hidden:hover { opacity: .65; }
+
+        .btn-vis {
+            width: 100%; padding: 9px 0;
+            border: 1px solid var(--border); border-radius: 8px;
+            background: var(--bg); color: var(--text-2);
+            font-size: 13px; font-weight: 500; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            transition: all .15s;
+        }
+        .btn-vis:hover { border-color: var(--brand); color: var(--brand); background: #e8f0fe; }
+        .zone-card.zone-hidden .btn-vis {
+            border-color: var(--ok); color: var(--ok); background: var(--ok-bg);
+        }
+        .zone-card.zone-hidden .btn-vis:hover { background: #c8e6c9; }
+
+        .edit-zones-btn {
+            background: none; color: var(--text-2);
+            border: 1px solid var(--border); border-radius: 8px;
+            padding: 4px 12px; font-size: 12px; font-weight: 500;
+            cursor: pointer; display: flex; align-items: center; gap: 4px;
+            transition: all .15s;
+        }
+        .edit-zones-btn:hover { border-color: var(--brand); color: var(--brand); }
+
         /* ── Unconfigured state ─────────────────────────── */
         .empty-state {
             text-align: center; padding: 48px 24px;
@@ -415,6 +467,16 @@
             </button>
         </div>
 
+        <!-- Config mode banner -->
+        <div class="config-bar" id="configBar" style="display:none;">
+            <span class="material-icons">tune</span>
+            <span class="config-bar-text">Tap the eye icon on each zone to show or hide it.</span>
+            <button class="btn-done" onclick="exitConfigMode()">
+                <span class="material-icons" style="font-size:16px;">check</span>
+                Done
+            </button>
+        </div>
+
         <!-- Zone grid / empty state -->
         <div id="zonesArea"></div>
 
@@ -454,10 +516,6 @@
                 <label>Status refresh (seconds)</label>
                 <input type="number" id="cfgRefresh" min="2" max="60" placeholder="5">
             </div>
-            <div class="field">
-                <label>Visible zones (comma-separated, e.g. 1,2,3)</label>
-                <input type="text" id="cfgZones" placeholder="Leave blank to show all 1–19">
-            </div>
         </div>
         <div class="panel-footer">
             <button class="btn-cancel" onclick="closeSettings()">Cancel</button>
@@ -477,7 +535,8 @@ const VISIBLE_KEY      = 'rb_visible';
 
 // ── State ──────────────────────────────────────────────
 let allZones = [];           // [{id, name}]
-let visibleIds = [];
+let visibleIds = [];         // zone ids to show (empty = all)
+let configMode = false;      // true while editing zone visibility
 let selectedDur = {};        // zoneId → minutes (in-memory)
 let lastDur = loadJson(LAST_DUR_KEY, {});
 let activeZone = null;       // {zone_id, name, time_remaining, duration_seconds}
@@ -517,17 +576,13 @@ async function saveSettings() {
     const ip      = document.getElementById('cfgIp').value.trim();
     const pwd     = document.getElementById('cfgPwd').value;
     const refresh = parseInt(document.getElementById('cfgRefresh').value) || 5;
-    const zonesRaw = document.getElementById('cfgZones').value;
-    const zones = zonesRaw.split(',').map(s => parseInt(s.trim())).filter(n => n > 0 && n < 20);
 
     const settings = { controller_ip: ip, controller_password: pwd,
-                       refresh_interval: refresh, visible_zones: zones };
+                       refresh_interval: refresh, visible_zones: visibleIds };
     const r = await post('/api/settings', { action: 'save', settings });
     if (r.ok && r.data.success) {
         configured = !!(ip && pwd);
         refreshSec = refresh;
-        visibleIds = zones;
-        if (zones.length) saveJson(VISIBLE_KEY, zones);
         closeSettings();
         await fetchZones();
         restartPolling();
@@ -538,15 +593,12 @@ async function saveSettings() {
 }
 
 function openSettings() {
-    // Load current values into form
     post('/api/settings', { action: 'load' }).then(r => {
         if (!r.ok) return;
         const s = r.data.settings || {};
         document.getElementById('cfgIp').value = s.controller_ip || '';
         document.getElementById('cfgPwd').value = s.controller_password || '';
         document.getElementById('cfgRefresh').value = s.refresh_interval || 5;
-        const vz = s.visible_zones || visibleIds || [];
-        document.getElementById('cfgZones').value = vz.join(', ');
     });
     document.getElementById('scanResults').style.display = 'none';
     document.getElementById('settingsOverlay').classList.add('show');
@@ -614,8 +666,13 @@ function getVisibleZones() {
     return allZones.filter(z => visibleIds.includes(z.id));
 }
 
+function isZoneVisible(zoneId) {
+    return !visibleIds.length || visibleIds.includes(zoneId);
+}
+
 function renderZones() {
     const area = document.getElementById('zonesArea');
+    document.getElementById('configBar').style.display = configMode ? 'flex' : 'none';
 
     if (!configured) {
         area.innerHTML = `
@@ -631,16 +688,17 @@ function renderZones() {
         return;
     }
 
-    const zones = getVisibleZones();
-    if (!zones.length) {
+    const displayZones = configMode ? allZones : getVisibleZones();
+
+    if (!configMode && !displayZones.length) {
         area.innerHTML = `
             <div class="empty-state">
-                <div class="material-icons">view_list</div>
-                <h2>No zones visible</h2>
-                <p>Add zone numbers in Settings → Visible zones.</p>
-                <button class="btn-primary" onclick="openSettings()">
-                    <span class="material-icons" style="font-size:16px;">settings</span>
-                    Open Settings
+                <div class="material-icons">visibility_off</div>
+                <h2>All zones hidden</h2>
+                <p>Use Edit Zones to make zones visible again.</p>
+                <button class="btn-primary" onclick="enterConfigMode()">
+                    <span class="material-icons" style="font-size:16px;">tune</span>
+                    Edit Zones
                 </button>
             </div>`;
         return;
@@ -649,16 +707,20 @@ function renderZones() {
     const isActive = activeZone && activeZone.zone_id;
     area.innerHTML = `
         <div class="section-header">
-            <span class="section-title">Zones</span>
-            ${isActive ? '' : ''}
+            <span class="section-title">${configMode ? 'Edit Zones' : 'Zones'}</span>
+            ${!configMode ? `<button class="edit-zones-btn" onclick="enterConfigMode()">
+                <span class="material-icons" style="font-size:15px;">tune</span>
+                Edit zones
+            </button>` : ''}
         </div>
         <div class="zones-grid">
-            ${zones.map(z => renderZoneCard(z, isActive)).join('')}
+            ${displayZones.map(z => renderZoneCard(z, isActive)).join('')}
         </div>`;
 }
 
 function renderZoneCard(zone, anyActive) {
     const isThisActive = activeZone && activeZone.zone_id === zone.id;
+    const visible = isZoneVisible(zone.id);
     const dur = selectedDur[zone.id] ?? lastDur[zone.id] ?? 10;
     const customVal = DURATION_CHIPS.includes(dur) ? '' : dur;
 
@@ -677,29 +739,70 @@ function renderZoneCard(zone, anyActive) {
 
     const runDisabled = anyActive && !isThisActive;
 
+    const actions = configMode
+        ? `<button class="btn-vis" onclick="toggleZoneVisibility(${zone.id})">
+               <span class="material-icons" style="font-size:16px;">${visible ? 'visibility' : 'visibility_off'}</span>
+               ${visible ? 'Visible — tap to hide' : 'Hidden — tap to show'}
+           </button>`
+        : isThisActive
+            ? `<button class="btn-stop" onclick="stopAll()">
+                   <span class="material-icons" style="font-size:16px;">stop</span> Stop
+               </button>`
+            : `<button class="btn-run" id="run-${zone.id}"
+                       onclick="runZone(${zone.id})" ${runDisabled ? 'disabled' : ''}>
+                   <span class="material-icons" style="font-size:16px;">play_arrow</span>
+                   Run ${dur}m
+               </button>`;
+
     return `
-        <div class="zone-card ${isThisActive ? 'active' : ''}" id="card-${zone.id}">
+        <div class="zone-card ${isThisActive ? 'active' : ''} ${configMode && !visible ? 'zone-hidden' : ''}" id="card-${zone.id}">
             <div class="zone-header">
                 <div class="zone-num">${zone.id}</div>
                 <div class="zone-name-wrap">
-                    <div class="zone-name" id="name-${zone.id}" onclick="editName(${zone.id})"
-                         title="Click to rename">${esc(zone.name)}</div>
+                    <div class="zone-name" id="name-${zone.id}"
+                         ${configMode ? '' : `onclick="editName(${zone.id})" title="Click to rename"`}
+                         style="${configMode ? 'cursor:default;' : ''}">${esc(zone.name)}</div>
                     <div class="zone-name-hint" id="hint-${zone.id}"></div>
                 </div>
             </div>
-            <div class="chips">${chips}${customChip}</div>
-            <div class="zone-actions">
-                ${isThisActive
-                    ? `<button class="btn-stop" onclick="stopAll()">
-                           <span class="material-icons" style="font-size:16px;">stop</span> Stop
-                       </button>`
-                    : `<button class="btn-run" id="run-${zone.id}"
-                               onclick="runZone(${zone.id})" ${runDisabled ? 'disabled' : ''}>
-                           <span class="material-icons" style="font-size:16px;">play_arrow</span>
-                           Run ${dur}m
-                       </button>`}
-            </div>
+            ${configMode ? '' : `<div class="chips">${chips}${customChip}</div>`}
+            <div class="zone-actions">${actions}</div>
         </div>`;
+}
+
+// ── Config mode (zone visibility) ─────────────────────
+function enterConfigMode() {
+    configMode = true;
+    renderZones();
+}
+
+async function exitConfigMode() {
+    configMode = false;
+    // Persist visible_zones to server
+    const r = await post('/api/settings', { action: 'save', settings: { visible_zones: visibleIds } });
+    if (!r.ok || !r.data.success) toast('Could not save zone visibility', 'error');
+    saveJson(VISIBLE_KEY, visibleIds);
+    renderZones();
+}
+
+function toggleZoneVisibility(zoneId) {
+    const visible = isZoneVisible(zoneId);
+    if (visible) {
+        // Hide: ensure visibleIds is fully populated first, then remove this one
+        if (!visibleIds.length) visibleIds = allZones.map(z => z.id);
+        visibleIds = visibleIds.filter(id => id !== zoneId);
+    } else {
+        // Show
+        visibleIds = [...visibleIds, zoneId].sort((a, b) => a - b);
+    }
+    // Re-render just this card so the rest stay stable
+    const card = document.getElementById(`card-${zoneId}`);
+    if (card) {
+        const zone = allZones.find(z => z.id === zoneId);
+        const newCard = document.createElement('div');
+        newCard.innerHTML = renderZoneCard(zone, false);
+        card.replaceWith(newCard.firstElementChild);
+    }
 }
 
 // ── Duration selection ─────────────────────────────────
