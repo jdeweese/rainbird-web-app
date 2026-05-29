@@ -3,1303 +3,899 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RainBird Controller</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <title>RainBird</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         :root {
-            --brand: #2196f3;
-            --brand-dark: #1976d2;
-            --ok: #4caf50;
-            --ok-dark: #388e3c;
-            --danger: #f44336;
-            --danger-dark: #d32f2f;
-            --text: #333;
-            --text-muted: #666;
-            --border: #e0e0e0;
-            --bg-subtle: #f5f7fa;
+            --brand: #1a73e8;
+            --brand-dark: #1557b0;
+            --ok: #1e8e3e;
+            --ok-bg: #e6f4ea;
+            --ok-border: #a8d5b5;
+            --warn: #e37400;
+            --danger: #d93025;
+            --text: #202124;
+            --text-2: #5f6368;
+            --border: #dadce0;
+            --surface: #ffffff;
+            --bg: #f1f3f4;
+            --radius: 12px;
         }
 
         body {
-            font-family: 'Roboto', sans-serif;
-            background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
             min-height: 100vh;
             color: var(--text);
+            font-size: 14px;
         }
 
-        .container {
-            max-width: 960px;
-            margin: 0 auto;
-            padding: 16px;
-        }
+        /* ── Layout ────────────────────────────────────── */
+        .app { display: flex; flex-direction: column; min-height: 100vh; }
 
-        /* --- Sticky header with connection dot --- */
-        .header {
-            position: sticky;
-            top: 0;
-            z-index: 50;
-            background: linear-gradient(135deg, var(--brand) 0%, #21cbf3 100%);
-            color: white;
-            padding: 14px 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 16px rgba(33, 150, 243, 0.25);
+        .topbar {
+            background: var(--brand);
+            color: #fff;
+            padding: 0 16px;
+            height: 56px;
             display: flex;
             align-items: center;
             gap: 12px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0,0,0,.18);
         }
 
-        .header h1 {
-            font-size: 1.25rem;
-            font-weight: 400;
+        .topbar-title {
+            font-size: 18px;
+            font-weight: 500;
+            flex: 1;
             display: flex;
             align-items: center;
             gap: 8px;
-            flex: 1;
         }
 
         .conn-dot {
-            width: 10px;
-            height: 10px;
+            width: 9px; height: 9px;
             border-radius: 50%;
-            background: #ccc;
+            background: rgba(255,255,255,.35);
             flex-shrink: 0;
-            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+            transition: background .4s;
         }
-        .conn-dot.ok { background: #4caf50; }
-        .conn-dot.err { background: #f44336; }
+        .conn-dot.ok  { background: #34a853; box-shadow: 0 0 0 3px rgba(52,168,83,.25); }
+        .conn-dot.err { background: #ea4335; box-shadow: 0 0 0 3px rgba(234,67,53,.25); }
 
-        .header-status {
-            font-size: 0.8rem;
-            opacity: 0.9;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
+        .topbar-status { font-size: 12px; opacity: .85; }
 
-        .icon-header-btn {
-            background: rgba(255, 255, 255, 0.15);
-            border: none;
-            color: white;
-            width: 36px;
-            height: 36px;
+        .icon-btn {
+            background: rgba(255,255,255,.12);
+            border: none; color: #fff;
+            width: 36px; height: 36px;
             border-radius: 50%;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.2s ease;
+            display: flex; align-items: center; justify-content: center;
+            transition: background .2s;
+            flex-shrink: 0;
         }
-        .icon-header-btn:hover { background: rgba(255, 255, 255, 0.28); }
+        .icon-btn:hover { background: rgba(255,255,255,.22); }
 
-        /* --- Active zone banner --- */
+        .main { flex: 1; padding: 16px; max-width: 900px; margin: 0 auto; width: 100%; }
+
+        /* ── Active banner ──────────────────────────────── */
         .active-banner {
-            background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border-left: 6px solid var(--ok);
             display: none;
-        }
-        .active-banner.visible { display: block; }
-
-        .active-banner-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        .active-banner-label {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--ok-dark);
-            font-weight: 500;
-            margin-bottom: 4px;
-        }
-
-        .active-banner-zone {
-            font-size: 1.5rem;
-            font-weight: 500;
-            color: #1b5e20;
-        }
-
-        .active-banner-countdown {
-            font-size: 2.25rem;
-            font-weight: 300;
-            color: #1b5e20;
-            font-variant-numeric: tabular-nums;
-            line-height: 1;
-        }
-
-        .active-banner-countdown-label {
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--ok-dark);
-            text-align: right;
-        }
-
-        .progress-bar {
-            margin-top: 16px;
-            height: 8px;
-            background: rgba(255, 255, 255, 0.6);
-            border-radius: 4px;
-            overflow: hidden;
-        }
-        .progress-bar-fill {
-            height: 100%;
-            background: var(--ok);
-            transition: width 1s linear;
-            border-radius: 4px;
-        }
-
-        .active-banner-stop {
-            margin-top: 16px;
-            background: var(--danger);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 10px 20px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            transition: background 0.2s ease;
-        }
-        .active-banner-stop:hover { background: var(--danger-dark); }
-
-        /* --- Cards --- */
-        .card {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-        }
-
-        .card-title {
-            font-size: 1rem;
-            font-weight: 500;
+            background: var(--ok-bg);
+            border: 1px solid var(--ok-border);
+            border-left: 4px solid var(--ok);
+            border-radius: var(--radius);
+            padding: 16px 20px;
             margin-bottom: 16px;
-            color: var(--brand-dark);
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        }
+        .active-banner.show { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+
+        .banner-info { flex: 1; min-width: 0; }
+        .banner-label { font-size: 11px; font-weight: 600; text-transform: uppercase;
+                        letter-spacing: .8px; color: var(--ok); margin-bottom: 2px; }
+        .banner-zone  { font-size: 20px; font-weight: 500; color: #0d652d;
+                        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .banner-timer {
+            font-size: 36px; font-weight: 300; color: #0d652d;
+            font-variant-numeric: tabular-nums; line-height: 1;
+            white-space: nowrap;
         }
 
-        /* --- Empty state (first run) --- */
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--text-muted);
+        .btn-stop-banner {
+            background: var(--danger);
+            color: #fff; border: none;
+            padding: 8px 18px; border-radius: 20px;
+            font-size: 13px; font-weight: 500; cursor: pointer;
+            display: flex; align-items: center; gap: 6px;
+            transition: background .2s; white-space: nowrap;
         }
-        .empty-state .material-icons {
-            font-size: 56px;
-            opacity: 0.4;
+        .btn-stop-banner:hover { background: #b52d22; }
+
+        /* ── Zone grid ──────────────────────────────────── */
+        .section-header {
+            display: flex; align-items: center; justify-content: space-between;
             margin-bottom: 12px;
         }
-        .empty-state-title {
-            font-size: 1.1rem;
-            margin-bottom: 8px;
-            color: var(--text);
-        }
-        .empty-state-body {
-            font-size: 0.9rem;
-            margin-bottom: 20px;
-            max-width: 340px;
-            margin-left: auto;
-            margin-right: auto;
-        }
+        .section-title { font-size: 13px; font-weight: 600; color: var(--text-2);
+                         text-transform: uppercase; letter-spacing: .6px; }
 
-        /* --- Zone search --- */
-        .zone-toolbar {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 16px;
-            align-items: center;
-        }
-        .zone-search {
-            flex: 1;
-            padding: 10px 12px 10px 36px;
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            font-size: 0.9rem;
-            background: white url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'><circle cx='11' cy='11' r='7'/><line x1='21' y1='21' x2='16.65' y2='16.65'/></svg>") no-repeat 10px center;
-        }
-        .zone-search:focus {
-            outline: none;
-            border-color: var(--brand);
-        }
-
-        /* --- Zones grid --- */
         .zones-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
             gap: 12px;
         }
 
         .zone-card {
-            background: white;
-            border-radius: 10px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
             padding: 16px;
-            border: 2px solid var(--border);
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            transition: box-shadow .15s, border-color .15s;
         }
-        .zone-card:hover {
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-        }
-        .zone-card.running {
+        .zone-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.1); }
+        .zone-card.active {
             border-color: var(--ok);
-            background: linear-gradient(135deg, #f1f8e9 0%, #e8f5e8 100%);
-            order: -1;
+            background: var(--ok-bg);
+            box-shadow: 0 0 0 2px rgba(30,142,62,.18);
         }
 
         .zone-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 12px;
+            display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
         }
 
         .zone-num {
-            background: var(--bg-subtle);
-            color: var(--text-muted);
-            font-size: 0.75rem;
-            font-weight: 500;
-            padding: 2px 8px;
-            border-radius: 10px;
+            width: 28px; height: 28px;
+            background: var(--brand);
+            color: #fff; border-radius: 50%;
+            font-size: 12px; font-weight: 600;
+            display: flex; align-items: center; justify-content: center;
             flex-shrink: 0;
         }
+        .zone-card.active .zone-num { background: var(--ok); }
 
-        .zone-card.running .zone-num {
-            background: var(--ok);
-            color: white;
-        }
+        .zone-name-wrap { flex: 1; min-width: 0; }
 
         .zone-name {
-            flex: 1;
-            font-size: 1rem;
-            font-weight: 500;
-            color: var(--text);
-            min-width: 0;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            font-size: 15px; font-weight: 500;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            cursor: pointer;
+            padding: 2px 4px; border-radius: 4px;
+            transition: background .15s;
         }
+        .zone-name:hover { background: rgba(0,0,0,.05); }
 
         .zone-name-input {
-            flex: 1;
-            border: 2px solid var(--brand);
-            border-radius: 6px;
-            padding: 4px 8px;
-            font-size: 1rem;
-            font-weight: 500;
-            font-family: inherit;
-            outline: none;
-            min-width: 0;
+            width: 100%; font-size: 15px; font-weight: 500;
+            border: 1px solid var(--brand); border-radius: 4px;
+            padding: 2px 6px; outline: none; font-family: inherit;
+            background: #fff;
         }
 
-        .zone-edit-btn {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            padding: 4px;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            opacity: 0;
-            transition: opacity 0.15s ease, background 0.15s ease;
-        }
-        .zone-card:hover .zone-edit-btn,
-        .zone-edit-btn:focus {
-            opacity: 1;
-        }
-        .zone-edit-btn:hover {
-            background: var(--bg-subtle);
-            color: var(--text);
+        .zone-name-hint {
+            font-size: 11px; color: var(--text-2); margin-top: 1px;
+            height: 14px; transition: opacity .3s;
         }
 
-        .zone-saved-hint {
-            font-size: 0.7rem;
-            color: var(--ok-dark);
-            opacity: 0;
-            transition: opacity 0.2s ease;
-        }
-        .zone-saved-hint.visible { opacity: 1; }
-
-        /* --- Duration chips --- */
-        .duration-chips {
-            display: flex;
-            gap: 6px;
-            margin-bottom: 12px;
-            flex-wrap: wrap;
-        }
+        /* Duration chips */
+        .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
 
         .chip {
-            background: var(--bg-subtle);
-            border: 1px solid transparent;
-            color: var(--text-muted);
-            padding: 5px 10px;
-            border-radius: 16px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.15s ease;
+            padding: 4px 12px; border-radius: 16px;
+            border: 1px solid var(--border);
+            background: var(--bg); color: var(--text-2);
+            font-size: 12px; font-weight: 500; cursor: pointer;
+            transition: all .15s; user-select: none;
         }
-        .chip:hover {
-            background: #e8eef5;
-        }
-        .chip.selected {
-            background: var(--brand);
-            color: white;
-            border-color: var(--brand);
-        }
-        .chip.custom {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .chip-input {
-            width: 36px;
-            border: none;
-            background: transparent;
-            color: inherit;
-            font-size: inherit;
-            font-weight: inherit;
-            text-align: center;
-            padding: 0;
-            -moz-appearance: textfield;
-        }
-        .chip-input::-webkit-outer-spin-button,
-        .chip-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+        .chip:hover  { border-color: var(--brand); color: var(--brand); background: #e8f0fe; }
+        .chip.active { border-color: var(--brand); color: #fff; background: var(--brand); }
 
-        /* --- Zone actions --- */
-        .zone-actions {
-            display: flex;
-            gap: 8px;
-            align-items: center;
+        .chip-custom {
+            display: flex; align-items: center; gap: 4px;
+            padding: 4px 8px; border-radius: 16px;
+            border: 1px solid var(--border);
+            background: var(--bg); cursor: text;
+            transition: border-color .15s;
         }
+        .chip-custom:focus-within { border-color: var(--brand); }
+        .chip-custom input {
+            width: 36px; border: none; background: transparent;
+            font-size: 12px; font-weight: 500; color: var(--text);
+            font-family: inherit; outline: none; text-align: center;
+        }
+        .chip-custom span { font-size: 11px; color: var(--text-2); }
 
-        .zone-start-btn {
-            flex: 1;
-            background: var(--ok);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 10px 16px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            transition: background 0.15s ease;
-        }
-        .zone-start-btn:hover { background: var(--ok-dark); }
-        .zone-start-btn:disabled {
-            background: #bbb;
-            cursor: not-allowed;
-        }
+        /* Run / Stop buttons */
+        .zone-actions { display: flex; gap: 8px; }
 
-        .zone-stop-btn {
-            background: var(--danger);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 10px 16px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            transition: background 0.15s ease;
+        .btn-run {
+            flex: 1; padding: 9px 0;
+            background: var(--brand); color: #fff; border: none;
+            border-radius: 8px; font-size: 13px; font-weight: 500;
+            cursor: pointer; display: flex; align-items: center;
+            justify-content: center; gap: 6px;
+            transition: background .2s;
         }
-        .zone-stop-btn:hover { background: var(--danger-dark); }
+        .btn-run:hover:not(:disabled) { background: var(--brand-dark); }
+        .btn-run:disabled { opacity: .45; cursor: default; }
 
-        /* --- Zone running mini-countdown --- */
-        .zone-countdown {
-            font-size: 0.8rem;
-            color: var(--ok-dark);
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-variant-numeric: tabular-nums;
+        .btn-stop {
+            padding: 9px 14px;
+            background: transparent; color: var(--danger);
+            border: 1px solid var(--danger); border-radius: 8px;
+            font-size: 13px; font-weight: 500; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 4px;
+            transition: all .2s;
         }
+        .btn-stop:hover { background: var(--danger); color: #fff; }
 
-        /* --- Toast messages --- */
-        .messages {
-            position: fixed;
-            top: 16px;
-            right: 16px;
-            z-index: 200;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            max-width: 360px;
+        /* ── Unconfigured state ─────────────────────────── */
+        .empty-state {
+            text-align: center; padding: 48px 24px;
+            background: var(--surface); border-radius: var(--radius);
+            border: 1px dashed var(--border);
         }
+        .empty-state .material-icons { font-size: 48px; color: var(--border); margin-bottom: 12px; }
+        .empty-state h2 { font-size: 16px; font-weight: 500; margin-bottom: 6px; }
+        .empty-state p  { color: var(--text-2); margin-bottom: 20px; }
+        .btn-primary {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: var(--brand); color: #fff; border: none;
+            padding: 10px 20px; border-radius: 8px;
+            font-size: 14px; font-weight: 500; cursor: pointer;
+            transition: background .2s;
+        }
+        .btn-primary:hover { background: var(--brand-dark); }
 
-        .message {
-            padding: 12px 16px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            animation: slideIn 0.25s ease;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-            background: white;
-            font-size: 0.9rem;
+        /* ── Toast ──────────────────────────────────────── */
+        #toast-container {
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+            z-index: 9999; display: flex; flex-direction: column; gap: 8px;
+            align-items: center; pointer-events: none;
         }
-        .message.success { border-left: 4px solid var(--ok); color: #1b5e20; }
-        .message.error { border-left: 4px solid var(--danger); color: #b71c1c; }
+        .toast {
+            background: #323232; color: #fff;
+            padding: 10px 20px; border-radius: 8px;
+            font-size: 13px; font-weight: 400;
+            box-shadow: 0 4px 12px rgba(0,0,0,.25);
+            animation: toast-in .2s ease;
+            pointer-events: auto;
+        }
+        .toast.error { background: #d93025; }
+        .toast.ok    { background: var(--ok); }
+        @keyframes toast-in { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
 
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(20px); }
-            to { opacity: 1; transform: translateX(0); }
+        /* ── Settings popup ─────────────────────────────── */
+        .overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,.45);
+            display: none; align-items: center; justify-content: center;
+            padding: 16px; z-index: 500;
         }
+        .overlay.show { display: flex; }
+
+        .panel {
+            background: var(--surface);
+            border-radius: var(--radius);
+            width: 100%; max-width: 420px;
+            box-shadow: 0 8px 32px rgba(0,0,0,.2);
+            overflow: hidden;
+        }
+        .panel-header {
+            padding: 16px 20px;
+            display: flex; align-items: center; gap: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+        .panel-header .material-icons { color: var(--brand); }
+        .panel-title { font-size: 16px; font-weight: 600; flex: 1; }
+        .close-btn {
+            background: none; border: none; cursor: pointer;
+            color: var(--text-2); width: 32px; height: 32px;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            transition: background .15s;
+        }
+        .close-btn:hover { background: var(--bg); }
+
+        .panel-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+
+        .field label {
+            display: block; font-size: 12px; font-weight: 500;
+            color: var(--text-2); margin-bottom: 4px;
+            text-transform: uppercase; letter-spacing: .5px;
+        }
+        .field-row { display: flex; gap: 8px; align-items: stretch; }
+        .field-row input { flex: 1; }
+
+        input[type="text"], input[type="password"], input[type="number"] {
+            width: 100%; padding: 9px 12px;
+            border: 1px solid var(--border); border-radius: 8px;
+            font-size: 14px; font-family: inherit; color: var(--text);
+            background: var(--surface); outline: none;
+            transition: border-color .15s;
+        }
+        input:focus { border-color: var(--brand); }
+
+        .scan-btn {
+            background: var(--bg); color: var(--text);
+            border: 1px solid var(--border); border-radius: 8px;
+            padding: 0 14px; font-size: 13px; font-weight: 500;
+            cursor: pointer; white-space: nowrap;
+            display: flex; align-items: center; gap: 6px;
+            transition: border-color .15s, background .15s;
+        }
+        .scan-btn:hover { border-color: var(--brand); color: var(--brand); background: #e8f0fe; }
+        .scan-btn:disabled { opacity: .5; cursor: default; }
+
+        .scan-results {
+            display: none;
+            border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+            margin-top: -8px;
+        }
+        .scan-result-item {
+            width: 100%; background: none; border: none;
+            border-bottom: 1px solid var(--border);
+            padding: 10px 14px; cursor: pointer;
+            display: flex; align-items: center; gap: 10px;
+            font-size: 13px; color: var(--text); text-align: left;
+            transition: background .15s;
+        }
+        .scan-result-item:last-child { border-bottom: none; }
+        .scan-result-item:hover { background: var(--bg); }
+        .scan-result-item .material-icons { font-size: 16px; color: var(--ok); }
+        .scan-result-item .scan-hint { margin-left: auto; font-size: 11px; color: var(--text-2); }
+
+        .panel-footer {
+            padding: 12px 20px;
+            display: flex; justify-content: flex-end; gap: 10px;
+            border-top: 1px solid var(--border);
+        }
+        .btn-cancel {
+            background: none; color: var(--text-2);
+            border: 1px solid var(--border); border-radius: 8px;
+            padding: 8px 18px; font-size: 13px; font-weight: 500;
+            cursor: pointer; transition: all .15s;
+        }
+        .btn-cancel:hover { border-color: var(--text-2); color: var(--text); }
+
+        .btn-save {
+            background: var(--brand); color: #fff; border: none;
+            border-radius: 8px; padding: 8px 20px;
+            font-size: 13px; font-weight: 500; cursor: pointer;
+            display: flex; align-items: center; gap: 6px;
+            transition: background .2s;
+        }
+        .btn-save:hover { background: var(--brand-dark); }
+
         @keyframes spin {
             from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+            to   { transform: rotate(360deg); }
         }
 
-        /* --- Popup --- */
-        .popup-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: none;
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-            padding: 16px;
-        }
-        .popup-overlay.visible { display: flex; }
-
-        .popup-panel {
-            background: white;
-            border-radius: 12px;
-            padding: 24px;
-            max-width: 480px;
-            width: 100%;
-            max-height: 85vh;
-            overflow-y: auto;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        }
-
-        .popup-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .popup-title {
-            font-size: 1.1rem;
-            font-weight: 500;
-            color: var(--brand-dark);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .close-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: var(--text-muted);
-            padding: 6px;
-            border-radius: 50%;
-            display: flex;
-            transition: background 0.15s ease;
-        }
-        .close-btn:hover { background: var(--bg-subtle); }
-
-        .field {
-            margin-bottom: 14px;
-        }
-        .field label {
-            display: block;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-bottom: 4px;
-            font-weight: 500;
-        }
-        .field input {
-            width: 100%;
-            padding: 10px 12px;
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            font-size: 0.95rem;
-            font-family: inherit;
-        }
-        .field input:focus {
-            outline: none;
-            border-color: var(--brand);
-        }
-
-        .popup-actions {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-            margin-top: 20px;
-        }
-
-        .btn {
-            padding: 10px 18px;
-            border: none;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-family: inherit;
-            transition: all 0.15s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .btn-primary { background: var(--brand); color: white; }
-        .btn-primary:hover { background: var(--brand-dark); }
-        .btn-secondary { background: var(--bg-subtle); color: var(--text); }
-        .btn-secondary:hover { background: #e4e9ef; }
-
-        /* --- Mobile --- */
-        @media (max-width: 600px) {
-            .container { padding: 12px; }
+        @media (max-width: 480px) {
             .zones-grid { grid-template-columns: 1fr; }
-            .header h1 { font-size: 1.1rem; }
-            .active-banner-countdown { font-size: 2rem; }
-            .messages { top: 8px; right: 8px; left: 8px; max-width: none; }
+            .banner-timer { font-size: 28px; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <span class="material-icons">water_drop</span>
-            <h1>RainBird</h1>
-            <div class="header-status">
-                <span class="conn-dot" id="connDot" aria-hidden="true"></span>
-                <span id="connLabel">Connecting…</span>
-            </div>
-            <button class="icon-header-btn" onclick="openConfigPopup()" aria-label="Settings" title="Settings">
-                <span class="material-icons">settings</span>
-            </button>
-        </div>
+<div class="app">
 
-        <div class="messages" id="messages" aria-live="polite"></div>
+    <!-- Top bar -->
+    <div class="topbar">
+        <div class="conn-dot" id="connDot"></div>
+        <div class="topbar-title">
+            <span class="material-icons" style="font-size:20px;">grass</span>
+            RainBird
+        </div>
+        <span class="topbar-status" id="connLabel">Not connected</span>
+        <button class="icon-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
+            <span class="material-icons" style="font-size:20px;">settings</span>
+        </button>
+    </div>
+
+    <div class="main">
 
         <!-- Active zone banner -->
-        <div class="active-banner" id="activeBanner" aria-live="polite">
-            <div class="active-banner-header">
-                <div>
-                    <div class="active-banner-label">Running now</div>
-                    <div class="active-banner-zone" id="activeBannerZone">—</div>
-                </div>
-                <div>
-                    <div class="active-banner-countdown-label">Time left</div>
-                    <div class="active-banner-countdown" id="activeBannerCountdown">--:--</div>
-                </div>
+        <div class="active-banner" id="activeBanner">
+            <div class="banner-info">
+                <div class="banner-label">Running now</div>
+                <div class="banner-zone" id="bannerZoneName">—</div>
             </div>
-            <div class="progress-bar">
-                <div class="progress-bar-fill" id="activeBannerProgress" style="width: 0%"></div>
-            </div>
-            <button class="active-banner-stop" onclick="stopAllZones()" aria-label="Stop irrigation">
-                <span class="material-icons">stop</span>
+            <div class="banner-timer" id="bannerTimer">--:--</div>
+            <button class="btn-stop-banner" onclick="stopAll()">
+                <span class="material-icons" style="font-size:16px;">stop</span>
                 Stop
             </button>
         </div>
 
-        <!-- Zones -->
-        <div class="card">
-            <div class="card-title">
-                <span class="material-icons">grass</span>
-                Zones
-            </div>
-            <div class="zone-toolbar" id="zoneToolbar" style="display: none;">
-                <input type="search" class="zone-search" id="zoneSearch"
-                       placeholder="Search zones…" aria-label="Search zones">
-            </div>
-            <div class="zones-grid" id="zonesList">
-                <div class="empty-state">
-                    <span class="material-icons">hourglass_empty</span>
-                    <div>Loading zones…</div>
-                </div>
-            </div>
-        </div>
-    </div>
+        <!-- Zone grid / empty state -->
+        <div id="zonesArea"></div>
 
-    <!-- Settings popup -->
-    <div class="popup-overlay" id="configPopup" role="dialog" aria-labelledby="configTitle">
-        <div class="popup-panel">
-            <div class="popup-header">
-                <div class="popup-title" id="configTitle">
-                    <span class="material-icons">settings</span>
-                    Settings
-                </div>
-                <button class="close-btn" onclick="closeConfigPopup()" aria-label="Close">
-                    <span class="material-icons">close</span>
-                </button>
-            </div>
+    </div>
+</div>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<!-- Settings popup -->
+<div class="overlay" id="settingsOverlay" role="dialog" aria-labelledby="settingsTitle">
+    <div class="panel">
+        <div class="panel-header">
+            <span class="material-icons">settings</span>
+            <div class="panel-title" id="settingsTitle">Settings</div>
+            <button class="close-btn" onclick="closeSettings()" aria-label="Close">
+                <span class="material-icons">close</span>
+            </button>
+        </div>
+        <div class="panel-body">
             <div class="field">
-                <label for="controllerIp">Controller IP address</label>
-                <div style="display:flex;gap:8px;align-items:center;">
-                    <input type="text" id="controllerIp" inputmode="numeric" placeholder="192.168.1.100" style="flex:1;">
-                    <button class="btn btn-secondary" id="scanBtn" onclick="scanForControllers()" title="Scan LAN for RainBird controllers" style="white-space:nowrap;flex-shrink:0;">
-                        <span class="material-icons" style="font-size:18px;">wifi_find</span>
+                <label>Controller IP address</label>
+                <div class="field-row">
+                    <input type="text" id="cfgIp" inputmode="numeric" placeholder="192.168.1.109">
+                    <button class="scan-btn" id="scanBtn" onclick="scanNetwork()">
+                        <span class="material-icons" style="font-size:16px;" id="scanIcon">wifi_find</span>
                         Scan
                     </button>
                 </div>
-                <div id="scanResults" style="display:none;margin-top:8px;border:1px solid var(--border);border-radius:6px;overflow:hidden;"></div>
+                <div class="scan-results" id="scanResults"></div>
             </div>
             <div class="field">
-                <label for="controllerPassword">Password</label>
-                <input type="password" id="controllerPassword" placeholder="Controller password">
+                <label>Password</label>
+                <input type="password" id="cfgPwd" placeholder="Controller password">
             </div>
             <div class="field">
-                <label for="refreshRate">Refresh interval (seconds)</label>
-                <input type="number" id="refreshRate" min="2" max="60" placeholder="10">
+                <label>Status refresh (seconds)</label>
+                <input type="number" id="cfgRefresh" min="2" max="60" placeholder="5">
             </div>
             <div class="field">
-                <label for="visibleZonesInput">Visible zones (comma-separated, 1–19)</label>
-                <input type="text" id="visibleZonesInput" placeholder="1, 2, 3">
-            </div>
-            <div class="popup-actions">
-                <button class="btn btn-secondary" onclick="closeConfigPopup()">Cancel</button>
-                <button class="btn btn-primary" onclick="saveConfigAndClose()">
-                    <span class="material-icons">save</span>
-                    Save
-                </button>
+                <label>Visible zones (comma-separated, e.g. 1,2,3)</label>
+                <input type="text" id="cfgZones" placeholder="Leave blank to show all 1–19">
             </div>
         </div>
+        <div class="panel-footer">
+            <button class="btn-cancel" onclick="closeSettings()">Cancel</button>
+            <button class="btn-save" onclick="saveSettings()">
+                <span class="material-icons" style="font-size:16px;">save</span>
+                Save
+            </button>
+        </div>
     </div>
+</div>
 
-    <script>
-        // --- State ---
-        const DEFAULT_DURATIONS = [5, 10, 15, 30, 45];
-        const LAST_DURATION_KEY = 'rainbird_last_duration_per_zone';
-        const VISIBLE_ZONES_KEY = 'rainbird_visible_zones';
+<script>
+// ── Constants ──────────────────────────────────────────
+const DURATION_CHIPS   = [5, 10, 15, 30, 45];
+const LAST_DUR_KEY     = 'rb_last_dur';
+const VISIBLE_KEY      = 'rb_visible';
 
-        let allZones = [];          // [{id, name}]
-        let visibleZoneIds = [];    // subset of zones to render
-        let lastDurationByZone = loadLastDurations();
-        let selectedDurationByZone = {}; // in-memory, falls back to last/10
+// ── State ──────────────────────────────────────────────
+let allZones = [];           // [{id, name}]
+let visibleIds = [];
+let selectedDur = {};        // zoneId → minutes (in-memory)
+let lastDur = loadJson(LAST_DUR_KEY, {});
+let activeZone = null;       // {zone_id, name, time_remaining, duration_seconds}
+let refreshSec = 5;
+let statusTimer = null;
+let countdownTimer = null;
+let configured = false;
 
-        let activeZone = null;      // {zone_id, name, time_remaining, duration_seconds}
-        let refreshIntervalSec = 10;
-        let statusTimer = null;
-        let countdownTimer = null;
-        let searchFilter = '';
-        let controllerConfigured = false;
+// ── Boot ───────────────────────────────────────────────
+window.addEventListener('load', async () => {
+    await fetchSettings();
+    await fetchZones();
+    startPolling();
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) { clearInterval(statusTimer); statusTimer = null; }
+        else if (!statusTimer) startPolling();
+    });
+});
 
-        // --- Utilities ---
-        function loadLastDurations() {
-            try { return JSON.parse(localStorage.getItem(LAST_DURATION_KEY) || '{}'); }
-            catch { return {}; }
+// ── Settings ───────────────────────────────────────────
+async function fetchSettings() {
+    try {
+        const r = await post('/api/settings', { action: 'load' });
+        if (!r.ok) return;
+        const s = r.data.settings || {};
+        configured = !!(s.controller_ip && s.controller_password);
+        refreshSec = Math.max(2, s.refresh_interval || 5);
+
+        const stored = loadJson(VISIBLE_KEY, null);
+        visibleIds = (s.visible_zones && s.visible_zones.length)
+            ? s.visible_zones
+            : stored || [];
+    } catch {}
+}
+
+async function saveSettings() {
+    const ip      = document.getElementById('cfgIp').value.trim();
+    const pwd     = document.getElementById('cfgPwd').value;
+    const refresh = parseInt(document.getElementById('cfgRefresh').value) || 5;
+    const zonesRaw = document.getElementById('cfgZones').value;
+    const zones = zonesRaw.split(',').map(s => parseInt(s.trim())).filter(n => n > 0 && n < 20);
+
+    const settings = { controller_ip: ip, controller_password: pwd,
+                       refresh_interval: refresh, visible_zones: zones };
+    const r = await post('/api/settings', { action: 'save', settings });
+    if (r.ok && r.data.success) {
+        configured = !!(ip && pwd);
+        refreshSec = refresh;
+        visibleIds = zones;
+        if (zones.length) saveJson(VISIBLE_KEY, zones);
+        closeSettings();
+        await fetchZones();
+        restartPolling();
+        toast('Settings saved', 'ok');
+    } else {
+        toast('Save failed', 'error');
+    }
+}
+
+function openSettings() {
+    // Load current values into form
+    post('/api/settings', { action: 'load' }).then(r => {
+        if (!r.ok) return;
+        const s = r.data.settings || {};
+        document.getElementById('cfgIp').value = s.controller_ip || '';
+        document.getElementById('cfgPwd').value = s.controller_password || '';
+        document.getElementById('cfgRefresh').value = s.refresh_interval || 5;
+        const vz = s.visible_zones || visibleIds || [];
+        document.getElementById('cfgZones').value = vz.join(', ');
+    });
+    document.getElementById('scanResults').style.display = 'none';
+    document.getElementById('settingsOverlay').classList.add('show');
+}
+
+function closeSettings() {
+    document.getElementById('settingsOverlay').classList.remove('show');
+}
+
+// ── Network scan ───────────────────────────────────────
+async function scanNetwork() {
+    const btn  = document.getElementById('scanBtn');
+    const icon = document.getElementById('scanIcon');
+    const res  = document.getElementById('scanResults');
+    btn.disabled = true;
+    icon.style.animation = 'spin 1s linear infinite';
+    icon.textContent = 'refresh';
+    res.style.display = 'none';
+    res.innerHTML = '';
+
+    try {
+        const r = await fetch('/api/scan');
+        const data = await r.json();
+        const ips = (data.controllers || []);
+        if (!ips.length) {
+            res.innerHTML = `<button class="scan-result-item" disabled style="cursor:default;color:var(--text-2);">
+                <span class="material-icons">search_off</span> No devices found on port 80</button>`;
+        } else {
+            res.innerHTML = ips.map(ip => `
+                <button class="scan-result-item" onclick="pickIp('${ip}')">
+                    <span class="material-icons">router</span>
+                    ${ip}
+                    <span class="scan-hint">tap to use</span>
+                </button>`).join('');
         }
-        function saveLastDurations() {
-            localStorage.setItem(LAST_DURATION_KEY, JSON.stringify(lastDurationByZone));
-        }
+        res.style.display = 'block';
+    } catch (e) {
+        res.innerHTML = `<button class="scan-result-item" disabled style="color:var(--danger);">Scan failed: ${e.message}</button>`;
+        res.style.display = 'block';
+    } finally {
+        btn.disabled = false;
+        icon.style.animation = '';
+        icon.textContent = 'wifi_find';
+    }
+}
 
-        function loadVisibleZones() {
-            try {
-                const stored = JSON.parse(localStorage.getItem(VISIBLE_ZONES_KEY) || 'null');
-                if (Array.isArray(stored) && stored.length) return stored;
-            } catch {}
-            return null;
-        }
-        function saveVisibleZones(ids) {
-            localStorage.setItem(VISIBLE_ZONES_KEY, JSON.stringify(ids));
-        }
+function pickIp(ip) {
+    document.getElementById('cfgIp').value = ip;
+    document.getElementById('scanResults').style.display = 'none';
+    document.getElementById('cfgPwd').focus();
+}
 
-        function formatTime(seconds) {
-            if (seconds == null || seconds <= 0) return '--:--';
-            const m = Math.floor(seconds / 60);
-            const s = Math.floor(seconds % 60);
-            return `${m}:${s.toString().padStart(2, '0')}`;
-        }
+// ── Zones ──────────────────────────────────────────────
+async function fetchZones() {
+    try {
+        const r = await fetch('/api/zones');
+        const d = await r.json();
+        if (d.success) allZones = d.zones;
+    } catch {}
+    renderZones();
+}
 
-        function getDurationForZone(zoneId) {
-            return selectedDurationByZone[zoneId]
-                ?? lastDurationByZone[zoneId]
-                ?? 10;
-        }
+function getVisibleZones() {
+    if (!visibleIds || !visibleIds.length) return allZones;
+    return allZones.filter(z => visibleIds.includes(z.id));
+}
 
-        // --- Init ---
-        window.addEventListener('load', async () => {
-            await loadConfigThenZones();
-            startStatusMonitoring();
-            document.addEventListener('visibilitychange', handleVisibilityChange);
-        });
+function renderZones() {
+    const area = document.getElementById('zonesArea');
 
-        async function loadConfigThenZones() {
-            await loadConfig();
-            await loadZones();
-            renderZones();
-        }
+    if (!configured) {
+        area.innerHTML = `
+            <div class="empty-state">
+                <div class="material-icons">settings_remote</div>
+                <h2>No controller configured</h2>
+                <p>Enter your RainBird controller's IP address and password to get started.</p>
+                <button class="btn-primary" onclick="openSettings()">
+                    <span class="material-icons" style="font-size:16px;">settings</span>
+                    Open Settings
+                </button>
+            </div>`;
+        return;
+    }
 
-        function handleVisibilityChange() {
-            if (document.hidden) {
-                if (statusTimer) { clearInterval(statusTimer); statusTimer = null; }
-            } else if (!statusTimer) {
-                startStatusMonitoring();
-            }
-        }
+    const zones = getVisibleZones();
+    if (!zones.length) {
+        area.innerHTML = `
+            <div class="empty-state">
+                <div class="material-icons">view_list</div>
+                <h2>No zones visible</h2>
+                <p>Add zone numbers in Settings → Visible zones.</p>
+                <button class="btn-primary" onclick="openSettings()">
+                    <span class="material-icons" style="font-size:16px;">settings</span>
+                    Open Settings
+                </button>
+            </div>`;
+        return;
+    }
 
-        // --- Config ---
-        async function loadConfig() {
-            try {
-                const res = await fetch('/api/settings', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'load' })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    const s = data.settings || {};
-                    refreshIntervalSec = parseInt(s.refresh_interval) || 10;
-                    controllerConfigured = !!(s.controller_ip && s.controller_password);
+    const isActive = activeZone && activeZone.zone_id;
+    area.innerHTML = `
+        <div class="section-header">
+            <span class="section-title">Zones</span>
+            ${isActive ? '' : ''}
+        </div>
+        <div class="zones-grid">
+            ${zones.map(z => renderZoneCard(z, isActive)).join('')}
+        </div>`;
+}
 
-                    document.getElementById('controllerIp').value = s.controller_ip || '';
-                    document.getElementById('controllerPassword').value = s.controller_password || '';
-                    document.getElementById('refreshRate').value = refreshIntervalSec;
+function renderZoneCard(zone, anyActive) {
+    const isThisActive = activeZone && activeZone.zone_id === zone.id;
+    const dur = selectedDur[zone.id] ?? lastDur[zone.id] ?? 10;
+    const customVal = DURATION_CHIPS.includes(dur) ? '' : dur;
 
-                    const visibleFromServer = Array.isArray(s.visible_zones) ? s.visible_zones : null;
-                    const visibleFromLocal = loadVisibleZones();
-                    visibleZoneIds = visibleFromServer
-                        || visibleFromLocal
-                        || deriveVisibleFromNames(s.zone_names);
+    const chips = DURATION_CHIPS.map(m => `
+        <button class="chip ${dur === m ? 'active' : ''}"
+                onclick="setDur(${zone.id}, ${m})">${m}m</button>`).join('');
 
-                    document.getElementById('visibleZonesInput').value = visibleZoneIds.join(', ');
-                }
-            } catch (e) {
-                console.warn('loadConfig failed', e);
-            }
-        }
+    const customChip = `
+        <div class="chip-custom" title="Custom minutes" onclick="this.querySelector('input').focus()">
+            <input type="number" min="1" max="120" value="${customVal}"
+                   placeholder="?" id="custom-${zone.id}"
+                   oninput="setDur(${zone.id}, +this.value || 0)"
+                   onkeydown="if(event.key==='Enter') document.getElementById('run-${zone.id}').click()">
+            <span>min</span>
+        </div>`;
 
-        function deriveVisibleFromNames(zoneNames) {
-            if (zoneNames && Object.keys(zoneNames).length) {
-                return Object.keys(zoneNames).map(n => parseInt(n)).sort((a, b) => a - b);
-            }
-            // First-run fallback: show zones 1-4 until configured
-            return [1, 2, 3, 4];
-        }
+    const runDisabled = anyActive && !isThisActive;
 
-        async function saveConfig() {
-            const visibleRaw = document.getElementById('visibleZonesInput').value || '';
-            const parsedVisible = visibleRaw
-                .split(',')
-                .map(s => parseInt(s.trim()))
-                .filter(n => Number.isInteger(n) && n >= 1 && n <= 19);
-
-            const settings = {
-                controller_ip: document.getElementById('controllerIp').value.trim(),
-                controller_password: document.getElementById('controllerPassword').value,
-                refresh_interval: parseInt(document.getElementById('refreshRate').value) || 10,
-                visible_zones: parsedVisible
-            };
-
-            try {
-                const res = await fetch('/api/settings', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'save', settings })
-                });
-                const data = await res.json();
-                if (!data.success) throw new Error(data.error || 'save failed');
-                saveVisibleZones(parsedVisible);
-                showMessage('Settings saved', 'success');
-                refreshIntervalSec = settings.refresh_interval;
-                controllerConfigured = !!(settings.controller_ip && settings.controller_password);
-                visibleZoneIds = parsedVisible.length ? parsedVisible : visibleZoneIds;
-                renderZones();
-                restartStatusMonitoring();
-            } catch (e) {
-                showMessage(`Failed to save settings: ${e.message}`, 'error');
-            }
-        }
-
-        // --- Zones ---
-        async function loadZones() {
-            try {
-                const res = await fetch('/api/zones');
-                const data = await res.json();
-                if (data.success) {
-                    allZones = data.zones;
-                } else {
-                    showMessage(`Error loading zones: ${data.error}`, 'error');
-                }
-            } catch (e) {
-                showMessage(`Failed to load zones: ${e.message}`, 'error');
-            }
-        }
-
-        function renderZones() {
-            const container = document.getElementById('zonesList');
-            const toolbar = document.getElementById('zoneToolbar');
-
-            if (!controllerConfigured) {
-                toolbar.style.display = 'none';
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <span class="material-icons">settings_input_antenna</span>
-                        <div class="empty-state-title">Connect your controller</div>
-                        <div class="empty-state-body">
-                            Enter your RainBird controller's IP address and password to get started.
-                        </div>
-                        <button class="btn btn-primary" onclick="openConfigPopup()">
-                            <span class="material-icons">settings</span>
-                            Open settings
-                        </button>
-                    </div>`;
-                return;
-            }
-
-            if (!visibleZoneIds.length) {
-                toolbar.style.display = 'none';
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <span class="material-icons">grass</span>
-                        <div class="empty-state-title">No zones configured</div>
-                        <div class="empty-state-body">
-                            Add the zone numbers you want to control in settings.
-                        </div>
-                        <button class="btn btn-primary" onclick="openConfigPopup()">
-                            <span class="material-icons">settings</span>
-                            Choose zones
-                        </button>
-                    </div>`;
-                return;
-            }
-
-            // Show toolbar only when there are enough zones to benefit
-            toolbar.style.display = visibleZoneIds.length > 6 ? 'flex' : 'none';
-
-            const zoneById = Object.fromEntries(allZones.map(z => [z.id, z]));
-            const filtered = visibleZoneIds
-                .map(id => zoneById[id])
-                .filter(z => z)
-                .filter(z => !searchFilter || z.name.toLowerCase().includes(searchFilter));
-
-            if (!filtered.length) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <span class="material-icons">search_off</span>
-                        <div>No zones match "${escapeHtml(searchFilter)}"</div>
-                    </div>`;
-                return;
-            }
-
-            container.innerHTML = filtered.map(renderZoneCard).join('');
-        }
-
-        function renderZoneCard(zone) {
-            const isActive = activeZone && activeZone.zone_id === zone.id;
-            const duration = getDurationForZone(zone.id);
-            const presetChips = DEFAULT_DURATIONS.map(m => `
-                <button type="button" class="chip ${m === duration ? 'selected' : ''}"
-                        onclick="selectDuration(${zone.id}, ${m})"
-                        aria-pressed="${m === duration}">${m}m</button>
-            `).join('');
-            const isCustom = !DEFAULT_DURATIONS.includes(duration);
-
-            const runningMeta = isActive ? `
-                <div class="zone-countdown" aria-label="Time remaining">
-                    <span class="material-icons" style="font-size: 16px;">timer</span>
-                    <span id="zone-countdown-${zone.id}">${formatTime(activeZone.time_remaining)}</span>
+    return `
+        <div class="zone-card ${isThisActive ? 'active' : ''}" id="card-${zone.id}">
+            <div class="zone-header">
+                <div class="zone-num">${zone.id}</div>
+                <div class="zone-name-wrap">
+                    <div class="zone-name" id="name-${zone.id}" onclick="editName(${zone.id})"
+                         title="Click to rename">${esc(zone.name)}</div>
+                    <div class="zone-name-hint" id="hint-${zone.id}"></div>
                 </div>
-            ` : '';
+            </div>
+            <div class="chips">${chips}${customChip}</div>
+            <div class="zone-actions">
+                ${isThisActive
+                    ? `<button class="btn-stop" onclick="stopAll()">
+                           <span class="material-icons" style="font-size:16px;">stop</span> Stop
+                       </button>`
+                    : `<button class="btn-run" id="run-${zone.id}"
+                               onclick="runZone(${zone.id})" ${runDisabled ? 'disabled' : ''}>
+                           <span class="material-icons" style="font-size:16px;">play_arrow</span>
+                           Run ${dur}m
+                       </button>`}
+            </div>
+        </div>`;
+}
 
-            return `
-                <div class="zone-card ${isActive ? 'running' : ''}" id="zone-card-${zone.id}">
-                    <div class="zone-header">
-                        <span class="zone-num">Z${zone.id}</span>
-                        <span class="zone-name" id="zone-name-${zone.id}">${escapeHtml(zone.name)}</span>
-                        <span class="zone-saved-hint" id="zone-saved-${zone.id}">Saved</span>
-                        <button class="zone-edit-btn" onclick="editZoneName(${zone.id})"
-                                aria-label="Rename zone ${zone.id}" title="Rename">
-                            <span class="material-icons" style="font-size: 18px;">edit</span>
-                        </button>
-                    </div>
-                    ${isActive ? runningMeta : `
-                        <div class="duration-chips" role="group" aria-label="Duration">
-                            ${presetChips}
-                            <label class="chip custom ${isCustom ? 'selected' : ''}" title="Custom duration">
-                                <input type="number" class="chip-input" min="1" max="60"
-                                       value="${isCustom ? duration : ''}"
-                                       placeholder="…"
-                                       aria-label="Custom minutes for zone ${zone.id}"
-                                       onchange="selectCustomDuration(${zone.id}, this.value)">
-                                m
-                            </label>
-                        </div>
-                    `}
-                    <div class="zone-actions">
-                        ${isActive
-                            ? `<button class="zone-stop-btn" onclick="stopAllZones()" style="flex:1;">
-                                   <span class="material-icons">stop</span>
-                                   Stop
-                               </button>`
-                            : `<button class="zone-start-btn" onclick="startZone(${zone.id})"
-                                       ${activeZone ? 'disabled title="Another zone is running"' : ''}>
-                                   <span class="material-icons">play_arrow</span>
-                                   Start ${duration}m
-                               </button>`
-                        }
-                    </div>
-                </div>
-            `;
-        }
+// ── Duration selection ─────────────────────────────────
+function setDur(zoneId, mins) {
+    if (!mins || mins < 1) return;
+    selectedDur[zoneId] = mins;
+    // Update chip highlight and run button label without full re-render
+    const card = document.getElementById(`card-${zoneId}`);
+    if (!card) return;
+    card.querySelectorAll('.chip').forEach(c => {
+        c.classList.toggle('active', parseInt(c.textContent) === mins);
+    });
+    const runBtn = document.getElementById(`run-${zoneId}`);
+    if (runBtn) runBtn.innerHTML = `<span class="material-icons" style="font-size:16px;">play_arrow</span> Run ${mins}m`;
+}
 
-        function escapeHtml(str) {
-            return String(str).replace(/[&<>"']/g, c => ({
-                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-            }[c]));
-        }
+// ── Zone name editing ──────────────────────────────────
+function editName(zoneId) {
+    const el   = document.getElementById(`name-${zoneId}`);
+    const hint = document.getElementById(`hint-${zoneId}`);
+    const current = el.textContent;
+    el.outerHTML = `<input class="zone-name-input" id="name-${zoneId}" value="${esc(current)}"
+        onblur="saveName(${zoneId})"
+        onkeydown="if(event.key==='Enter') this.blur(); if(event.key==='Escape') cancelName(${zoneId}, '${esc(current)}')"
+        autofocus>`;
+    document.getElementById(`name-${zoneId}`).select();
+}
 
-        function selectDuration(zoneId, minutes) {
-            selectedDurationByZone[zoneId] = minutes;
-            lastDurationByZone[zoneId] = minutes;
-            saveLastDurations();
-            renderZones();
-        }
+function cancelName(zoneId, original) {
+    const el = document.getElementById(`name-${zoneId}`);
+    el.outerHTML = `<div class="zone-name" id="name-${zoneId}" onclick="editName(${zoneId})" title="Click to rename">${original}</div>`;
+}
 
-        function selectCustomDuration(zoneId, raw) {
-            const m = parseInt(raw);
-            if (!Number.isFinite(m) || m < 1 || m > 60) return;
-            selectedDurationByZone[zoneId] = m;
-            lastDurationByZone[zoneId] = m;
-            saveLastDurations();
-            renderZones();
-        }
+async function saveName(zoneId) {
+    const el = document.getElementById(`name-${zoneId}`);
+    if (!el) return;
+    const name = el.value.trim() || `Zone ${zoneId}`;
+    el.outerHTML = `<div class="zone-name" id="name-${zoneId}" onclick="editName(${zoneId})" title="Click to rename">${esc(name)}</div>`;
 
-        function editZoneName(zoneId) {
-            const zone = allZones.find(z => z.id === zoneId);
-            if (!zone) return;
-            const nameEl = document.getElementById(`zone-name-${zoneId}`);
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.className = 'zone-name-input';
-            input.value = zone.name;
-            input.setAttribute('aria-label', `Zone ${zoneId} name`);
-            nameEl.replaceWith(input);
-            input.focus();
-            input.select();
+    // Update allZones cache
+    const zone = allZones.find(z => z.id === zoneId);
+    if (zone) zone.name = name;
 
-            const commit = async () => {
-                input.removeEventListener('blur', commit);
-                input.removeEventListener('keydown', onKey);
-                const newName = input.value.trim() || `Zone ${zoneId}`;
-                if (newName !== zone.name) {
-                    zone.name = newName;
-                    await saveZoneName(zoneId, newName);
-                }
-                renderZones();
+    // Persist to server
+    const r = await post('/api/settings', { action: 'update-zone-name', zone_id: zoneId, name });
+    const hint = document.getElementById(`hint-${zoneId}`);
+    if (hint) {
+        hint.textContent = r.ok && r.data.success ? 'Saved ✓' : 'Save failed';
+        hint.style.opacity = '1';
+        setTimeout(() => { hint.style.opacity = '0'; hint.textContent = ''; }, 2000);
+    }
+}
+
+// ── Zone control ───────────────────────────────────────
+async function runZone(zoneId) {
+    const dur = selectedDur[zoneId] ?? lastDur[zoneId] ?? 10;
+    lastDur[zoneId] = dur;
+    saveJson(LAST_DUR_KEY, lastDur);
+
+    const r = await post('/api/zones/start', { zone_id: zoneId, duration: dur });
+    if (r.ok && r.data.success) {
+        toast(`Zone ${zoneId} started for ${dur} min`);
+        await fetchStatus();
+    } else {
+        toast(r.data.error || 'Failed to start zone', 'error');
+    }
+}
+
+async function stopAll() {
+    const r = await post('/api/zones/stop-all', {});
+    if (r.ok && r.data.success) {
+        toast('Irrigation stopped');
+        await fetchStatus();
+    } else {
+        toast(r.data.error || 'Failed to stop', 'error');
+    }
+}
+
+// ── Status polling ─────────────────────────────────────
+function startPolling() {
+    fetchStatus();
+    statusTimer = setInterval(fetchStatus, Math.max(2, refreshSec) * 1000);
+}
+function restartPolling() {
+    clearInterval(statusTimer);
+    startPolling();
+}
+
+async function fetchStatus() {
+    if (!configured) return;
+    try {
+        const r = await fetch('/api/status');
+        const d = await r.json();
+        if (!d.success) { setConn('err', 'Error'); return; }
+
+        const s = d.status;
+        const was = activeZone && activeZone.zone_id;
+        const irr = s.irrigation_state;
+
+        if (irr.active && irr.zone) {
+            const zone = allZones.find(z => z.id === irr.zone);
+            activeZone = {
+                zone_id: irr.zone,
+                name: zone ? zone.name : `Zone ${irr.zone}`,
+                time_remaining: irr.time_remaining,
+                duration_seconds: irr.time_remaining // seed countdown from server
             };
-            const onKey = (e) => {
-                if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
-                else if (e.key === 'Escape') { input.value = zone.name; input.blur(); }
-            };
-            input.addEventListener('blur', commit);
-            input.addEventListener('keydown', onKey);
-        }
-
-        async function saveZoneName(zoneId, name) {
-            try {
-                const res = await fetch('/api/settings', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'update-zone-name', zone_id: zoneId, name })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    showSavedHint(zoneId);
-                } else {
-                    showMessage('Failed to save zone name', 'error');
-                }
-            } catch (e) {
-                showMessage(`Failed to save zone name: ${e.message}`, 'error');
+            if (!was || was !== irr.zone) {
+                startCountdown();
             }
+        } else {
+            const changed = !!was;
+            activeZone = null;
+            clearInterval(countdownTimer); countdownTimer = null;
+            if (changed) renderZones();
         }
 
-        function showSavedHint(zoneId) {
-            setTimeout(() => {
-                const hint = document.getElementById(`zone-saved-${zoneId}`);
-                if (!hint) return;
-                hint.classList.add('visible');
-                setTimeout(() => hint.classList.remove('visible'), 1200);
-            }, 50);
-        }
+        updateBanner();
+        if (!was !== !irr.active) renderZones(); // active state changed → re-render
+        setConn('ok', s.rain_sensor && s.rain_sensor.active ? 'Rain delay' : 'Connected');
+    } catch {
+        setConn('err', 'Disconnected');
+    }
+}
 
-        // --- Start / stop ---
-        async function startZone(zoneId) {
-            const duration = getDurationForZone(zoneId);
-            lastDurationByZone[zoneId] = duration;
-            saveLastDurations();
+function setConn(state, label) {
+    document.getElementById('connDot').className = 'conn-dot ' + state;
+    document.getElementById('connLabel').textContent = label;
+}
 
-            try {
-                const res = await fetch('/api/zones/start', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ zone_id: zoneId, duration })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    showMessage(data.message || `Zone ${zoneId} started`, 'success');
-                    const zone = allZones.find(z => z.id === zoneId);
-                    activeZone = {
-                        zone_id: zoneId,
-                        name: zone ? zone.name : `Zone ${zoneId}`,
-                        time_remaining: duration * 60,
-                        duration_seconds: duration * 60
-                    };
-                    renderZones();
-                    renderActiveBanner();
-                    startCountdown();
-                    getStatus();
-                } else {
-                    showMessage(`Error: ${data.error}`, 'error');
-                }
-            } catch (e) {
-                showMessage(`Failed to start zone: ${e.message}`, 'error');
-            }
-        }
+// ── Countdown ──────────────────────────────────────────
+function startCountdown() {
+    clearInterval(countdownTimer);
+    renderZones();
+    updateBanner();
+    countdownTimer = setInterval(() => {
+        if (!activeZone) { clearInterval(countdownTimer); return; }
+        activeZone.time_remaining = Math.max(0, activeZone.time_remaining - 1);
+        updateBanner();
+        // Update run button label live
+        const card = document.getElementById(`card-${activeZone.zone_id}`);
+        // (full card re-render avoided to keep inputs stable)
+    }, 1000);
+}
 
-        async function stopAllZones() {
-            try {
-                const res = await fetch('/api/zones/stop-all', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({})
-                });
-                const data = await res.json();
-                if (data.success) {
-                    showMessage(data.message || 'Stopped', 'success');
-                    activeZone = null;
-                    renderZones();
-                    renderActiveBanner();
-                } else {
-                    showMessage(`Error: ${data.error}`, 'error');
-                }
-            } catch (e) {
-                showMessage(`Failed to stop: ${e.message}`, 'error');
-            }
-        }
+function updateBanner() {
+    const banner = document.getElementById('activeBanner');
+    if (!activeZone || !activeZone.zone_id) {
+        banner.classList.remove('show');
+        return;
+    }
+    banner.classList.add('show');
+    document.getElementById('bannerZoneName').textContent = activeZone.name;
+    document.getElementById('bannerTimer').textContent = fmt(activeZone.time_remaining);
+}
 
-        // --- Status polling ---
-        function startStatusMonitoring() {
-            getStatus();
-            statusTimer = setInterval(getStatus, Math.max(2, refreshIntervalSec) * 1000);
-        }
+function fmt(sec) {
+    if (sec == null || sec <= 0) return '--:--';
+    return `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
+}
 
-        function restartStatusMonitoring() {
-            if (statusTimer) clearInterval(statusTimer);
-            startStatusMonitoring();
-        }
-
-        async function getStatus() {
-            if (!controllerConfigured) {
-                setConnDot('idle', 'Not configured');
-                return;
-            }
-            try {
-                const res = await fetch('/api/status');
-                const data = await res.json();
-
-                if (!data.success) {
-                    setConnDot('err', 'Error');
-                    return;
-                }
-                setConnDot('ok', 'Connected');
-
-                const state = data.status.irrigation_state;
-                if (state.active && state.zone) {
-                    const zone = allZones.find(z => z.id === state.zone);
-                    const prev = activeZone;
-                    activeZone = {
-                        zone_id: state.zone,
-                        name: zone ? zone.name : `Zone ${state.zone}`,
-                        time_remaining: state.time_remaining,
-                        // Preserve original duration across polls so progress bar doesn't jump
-                        duration_seconds: prev && prev.zone_id === state.zone
-                            ? prev.duration_seconds
-                            : Math.max(state.time_remaining, 1)
-                    };
-                    renderActiveBanner();
-                    startCountdown();
-                } else if (activeZone) {
-                    activeZone = null;
-                    renderZones();
-                    renderActiveBanner();
-                }
-            } catch (e) {
-                setConnDot('err', 'Disconnected');
-            }
-        }
-
-        function setConnDot(state, label) {
-            const dot = document.getElementById('connDot');
-            const lbl = document.getElementById('connLabel');
-            dot.classList.remove('ok', 'err');
-            if (state === 'ok') dot.classList.add('ok');
-            else if (state === 'err') dot.classList.add('err');
-            lbl.textContent = label;
-        }
-
-        // --- Active banner + countdown ---
-        function renderActiveBanner() {
-            const banner = document.getElementById('activeBanner');
-            if (!activeZone) {
-                banner.classList.remove('visible');
-                if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
-                return;
-            }
-            banner.classList.add('visible');
-            document.getElementById('activeBannerZone').textContent =
-                `${activeZone.name} · Z${activeZone.zone_id}`;
-            updateCountdownUI();
-        }
-
-        function updateCountdownUI() {
-            if (!activeZone) return;
-            document.getElementById('activeBannerCountdown').textContent =
-                formatTime(activeZone.time_remaining);
-            const pct = activeZone.duration_seconds > 0
-                ? Math.max(0, Math.min(100,
-                    100 - (activeZone.time_remaining / activeZone.duration_seconds) * 100))
-                : 0;
-            document.getElementById('activeBannerProgress').style.width = pct + '%';
-
-            const zoneCountEl = document.getElementById(`zone-countdown-${activeZone.zone_id}`);
-            if (zoneCountEl) zoneCountEl.textContent = formatTime(activeZone.time_remaining);
-        }
-
-        function startCountdown() {
-            if (countdownTimer) clearInterval(countdownTimer);
-            countdownTimer = setInterval(() => {
-                if (!activeZone) {
-                    clearInterval(countdownTimer); countdownTimer = null; return;
-                }
-                activeZone.time_remaining = Math.max(0, activeZone.time_remaining - 1);
-                updateCountdownUI();
-                if (activeZone.time_remaining <= 0) {
-                    clearInterval(countdownTimer); countdownTimer = null;
-                    // Force a status refresh to confirm the zone actually stopped
-                    setTimeout(getStatus, 1500);
-                }
-            }, 1000);
-        }
-
-        // --- Messages ---
-        function showMessage(message, type = 'success') {
-            const container = document.getElementById('messages');
-            const el = document.createElement('div');
-            el.className = `message ${type}`;
-            const icon = type === 'success' ? 'check_circle' : 'error';
-            el.innerHTML = `<span class="material-icons">${icon}</span><span></span>`;
-            el.querySelector('span:last-child').textContent = message;
-            container.appendChild(el);
-            setTimeout(() => {
-                el.style.opacity = '0';
-                el.style.transition = 'opacity 0.3s ease';
-                setTimeout(() => el.remove(), 300);
-            }, 3500);
-        }
-
-        // --- Popups ---
-        function openConfigPopup() {
-            loadConfig();
-            document.getElementById('scanResults').style.display = 'none';
-            document.getElementById('configPopup').classList.add('visible');
-        }
-        function closeConfigPopup() {
-            document.getElementById('configPopup').classList.remove('visible');
-        }
-        async function saveConfigAndClose() {
-            await saveConfig();
-            closeConfigPopup();
-        }
-
-        // --- LAN scan ---
-        async function scanForControllers() {
-            const btn = document.getElementById('scanBtn');
-            const resultsEl = document.getElementById('scanResults');
-
-            btn.disabled = true;
-            btn.innerHTML = '<span class="material-icons" style="font-size:18px;animation:spin 1s linear infinite;">refresh</span> Scanning…';
-            resultsEl.style.display = 'none';
-            resultsEl.innerHTML = '';
-
-            try {
-                const res = await fetch('/api/scan');
-                const data = await res.json();
-                const controllers = data.controllers || [];
-
-                if (controllers.length === 0) {
-                    resultsEl.innerHTML = `
-                        <div style="padding:10px 12px;color:var(--text-muted);font-size:0.875rem;display:flex;align-items:center;gap:6px;">
-                            <span class="material-icons" style="font-size:16px;">search_off</span>
-                            No RainBird controllers found on this network
-                        </div>`;
-                } else {
-                    resultsEl.innerHTML = controllers.map(ip => `
-                        <button onclick="selectScannedIp('${ip}')" style="
-                            display:flex;align-items:center;gap:8px;width:100%;padding:10px 12px;
-                            background:none;border:none;border-bottom:1px solid var(--border);
-                            cursor:pointer;font-size:0.9rem;color:var(--text);text-align:left;
-                            transition:background 0.15s ease;"
-                            onmouseover="this.style.background='var(--bg-subtle)'"
-                            onmouseout="this.style.background='none'">
-                            <span class="material-icons" style="font-size:18px;color:var(--ok);">router</span>
-                            ${ip}
-                            <span style="margin-left:auto;font-size:0.75rem;color:var(--text-muted);">tap to use</span>
-                        </button>`).join('');
-                    // Remove border from last item
-                    resultsEl.querySelector('button:last-child').style.borderBottom = 'none';
-                }
-                resultsEl.style.display = 'block';
-            } catch (e) {
-                resultsEl.innerHTML = `
-                    <div style="padding:10px 12px;color:var(--danger);font-size:0.875rem;">
-                        Scan failed: ${e.message}
-                    </div>`;
-                resultsEl.style.display = 'block';
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = '<span class="material-icons" style="font-size:18px;">wifi_find</span> Scan';
-            }
-        }
-
-        function selectScannedIp(ip) {
-            document.getElementById('controllerIp').value = ip;
-            document.getElementById('scanResults').style.display = 'none';
-            document.getElementById('controllerPassword').focus();
-        }
-
-        // --- Search ---
-        document.addEventListener('input', (e) => {
-            if (e.target && e.target.id === 'zoneSearch') {
-                searchFilter = e.target.value.toLowerCase().trim();
-                renderZones();
-            }
+// ── Utilities ──────────────────────────────────────────
+async function post(url, body) {
+    try {
+        const r = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
         });
-    </script>
+        const data = await r.json();
+        return { ok: true, data };
+    } catch (e) {
+        return { ok: false, data: { error: e.message } };
+    }
+}
+
+function loadJson(key, def) {
+    try { return JSON.parse(localStorage.getItem(key)) ?? def; } catch { return def; }
+}
+function saveJson(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+
+function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function toast(msg, type = '') {
+    const el = document.createElement('div');
+    el.className = 'toast ' + type;
+    el.textContent = msg;
+    document.getElementById('toast-container').appendChild(el);
+    setTimeout(() => {
+        el.style.transition = 'opacity .3s';
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 300);
+    }, 3200);
+}
+</script>
 </body>
 </html>
