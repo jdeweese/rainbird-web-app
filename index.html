@@ -109,6 +109,27 @@
             white-space: nowrap;
         }
 
+        .banner-controls {
+            display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+        }
+
+        .btn-adjust {
+            background: rgba(255,255,255,.15);
+            border: 1px solid rgba(255,255,255,.3);
+            color: #0d652d; width: 36px; height: 36px; border-radius: 50%;
+            font-size: 20px; font-weight: 300; cursor: pointer; line-height: 1;
+            display: flex; align-items: center; justify-content: center;
+            transition: background .15s; flex-shrink: 0;
+            background: var(--ok-bg); border-color: var(--ok-border);
+        }
+        .btn-adjust:hover { background: #c8e6c9; }
+        .btn-adjust:disabled { opacity: .4; cursor: default; }
+
+        .adjust-label {
+            font-size: 11px; color: var(--ok); text-align: center;
+            white-space: nowrap; min-width: 40px;
+        }
+
         .btn-stop-banner {
             background: var(--danger);
             color: #fff; border: none;
@@ -461,10 +482,20 @@
                 <div class="banner-zone" id="bannerZoneName">—</div>
             </div>
             <div class="banner-timer" id="bannerTimer">--:--</div>
-            <button class="btn-stop-banner" onclick="stopAll()">
-                <span class="material-icons" style="font-size:16px;">stop</span>
-                Stop
-            </button>
+            <div class="banner-controls">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+                    <button class="btn-adjust" id="adjMinus" onclick="adjustTime(-5)" title="−5 min">−</button>
+                    <span class="adjust-label">5 min</span>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+                    <button class="btn-adjust" id="adjPlus" onclick="adjustTime(5)" title="+5 min">+</button>
+                    <span class="adjust-label">5 min</span>
+                </div>
+                <button class="btn-stop-banner" onclick="stopAll()">
+                    <span class="material-icons" style="font-size:16px;">stop</span>
+                    Stop
+                </button>
+            </div>
         </div>
 
         <!-- Config mode banner -->
@@ -879,6 +910,29 @@ async function stopAll() {
     } else {
         toast(r.data.error || 'Failed to stop', 'error');
     }
+}
+
+async function adjustTime(delta) {
+    const minus = document.getElementById('adjMinus');
+    const plus  = document.getElementById('adjPlus');
+    if (minus) minus.disabled = true;
+    if (plus)  plus.disabled  = true;
+
+    const r = await post('/api/zones/adjust', { delta });
+    if (r.ok && r.data.success) {
+        // Update local countdown to new time immediately
+        if (activeZone) {
+            activeZone.time_remaining = r.data.minutes * 60;
+            activeZone.duration_seconds = r.data.minutes * 60;
+            updateBanner();
+        }
+        toast(`${delta > 0 ? '+' : ''}${delta} min`);
+    } else {
+        toast(r.data.error || 'Adjust failed', 'error');
+    }
+
+    if (minus) minus.disabled = false;
+    if (plus)  plus.disabled  = false;
 }
 
 // ── Status polling ─────────────────────────────────────

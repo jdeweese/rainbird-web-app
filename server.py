@@ -93,9 +93,9 @@ from pyrainbird import async_client
 # CONFIG_PATH env var is not set; Docker sets it to /app/config/config.json).
 _DEFAULT_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config", "config.json")
 
-# Global session management
-active_sessions = {}
-last_cleanup = time.time()
+# No global session cache — each request creates and closes its own aiohttp session.
+# Caching sessions across requests breaks because run_async() creates a new event
+# loop per call; aiohttp sessions are bound to the loop they were created on.
 
 class RainBirdHandler(BaseHTTPRequestHandler):
     def set_active_zone(self, zone_id, duration=None):
@@ -261,6 +261,8 @@ class RainBirdHandler(BaseHTTPRequestHandler):
             self.handle_stop_zone(request_data)
         elif path == '/api/zones/stop-all':
             self.handle_stop_all_zones(request_data)
+        elif path == '/api/zones/adjust':
+            self.handle_adjust_zone(request_data)
         elif path == '/api/rain-sensor/override':
             self.handle_rain_sensor_override(request_data)
         elif path == '/api/settings':
@@ -328,86 +330,34 @@ class RainBirdHandler(BaseHTTPRequestHandler):
             self.send_json_response({"success": False, "error": str(e)})
     
     def handle_get_status(self):
-        """API endpoint: GET /api/status - Get current irrigation system status."""
+        """API endpoint: GET /api/status"""
         try:
-            result = self.run_async(self._get_status_async())
+            result = self.run_async(self.with_controller(self._do_get_status))
+            if result is None:
+                result = {"success": False, "error": "Controller not configured"}
             self.send_json_response(result)
         except Exception as e:
             self.send_json_response({"success": False, "error": str(e)})
 
-    async def _get_status_async(self):
-        """
-        API endpoint: GET /api/status - Get current irrigation system status.
+    async def _do_get_status(self, controller):
+        irrigation_active = await controller.get_current_irrigation()
+        rain_sensor = await controller.get_rain_sensor_state()
 
-        Returns comprehensive status information about the irrigation system,
-        including active zones, rain sensor state, and controller information.
+        zone_info = self.get_active_zone()
+        active_zone = None
+        time_remaining = 0
 
-        Status Information:
-            - Irrigation state: Whether system is active, which zone, time remaining
-            - Rain sensor: Whether sensor is active and preventing irrigation
-            - Model info: Controller model and firmware version
-            - Timestamp: When status was retrieved
+        if irrigation_active and zone_info:
+            active_zone = zone_info['zone_id']
+            if zone_info.get('start_time') and zone_info.get('duration'):
+                elapsed = time.time() - zone_info['start_time']
+                time_remaining = max(0, (zone_info['duration'] * 60) - elapsed)
+        elif not irrigation_active:
+            self.set_active_zone(None)
 
-        Response Format:
-            {
-                "success": true,
-                "status": {
-                    "irrigation_state": {
-                        "active": false,
-                        "zone": null,            // Zone ID if active
-                        "time_remaining": 0      // Minutes remaining
-                    },
-                    "rain_sensor": {
-                        "active": false,
-                        "status": "inactive"
-                    },
-                    "model_info": {
-                        "model": "ESP-ME3",
-                        "version": "2.12"
-                    },
-                    "timestamp": 1726502433      // Unix timestamp
-                }
-            }
-
-        Error Responses:
-            - Controller not configured: success=false, error message
-            - Connection failed: success=false, error message
-            - Other errors: success=false, error message
-
-        Returns:
-            None - Sends JSON response directly
-
-        TODO:
-            - Integrate actual PyRainBird controller communication
-            - Currently returns mock data
-            - Need to implement async controller queries
-            - Add remaining time calculation (controller doesn't provide this)
-        """
-        controller_data = await self.get_controller()
-        if not controller_data:
-            return {"success": False, "error": "Controller not configured"}
-
-        controller, session = controller_data
-        try:
-            # Get current irrigation status
-            irrigation_active = await controller.get_current_irrigation()
-            rain_sensor = await controller.get_rain_sensor_state()
-            
-            # Get tracked zone info with timing
-            zone_info = self.get_active_zone()
-            active_zone = None
-            time_remaining = 0
-            
-            if irrigation_active and zone_info:
-                active_zone = zone_info['zone_id']
-                if zone_info.get('start_time') and zone_info.get('duration'):
-                    elapsed = time.time() - zone_info['start_time']
-                    time_remaining = max(0, (zone_info['duration'] * 60) - elapsed)
-            elif not irrigation_active:
-                # Clear tracking if irrigation stopped
-                self.set_active_zone(None)
-            
-            status = {
+        return {
+            "success": True,
+            "status": {
                 "irrigation_state": {
                     "active": bool(irrigation_active),
                     "zone": active_zone,
@@ -417,177 +367,122 @@ class RainBirdHandler(BaseHTTPRequestHandler):
                     "active": bool(rain_sensor),
                     "status": "active" if rain_sensor else "inactive"
                 },
-                "model_info": {"model": "ESP-ME3", "version": "2.12"},
                 "timestamp": int(time.time())
             }
-            
-            return {"success": True, "status": status}
-        finally:
-            # Don't close session - it's managed now
-            pass
-    
+        }
+
     def handle_start_zone(self, request_data):
-        """API endpoint: POST /api/zones/start - Start irrigation on a specific zone."""
+        """API endpoint: POST /api/zones/start"""
         try:
-            result = self.run_async(self._start_zone_async(request_data))
+            zone_id  = request_data.get('zone_id')
+            duration = int(request_data.get('duration', 10))
+            result = self.run_async(self.with_controller(
+                lambda c: self._do_start_zone(c, zone_id, duration)
+            ))
+            if result is None:
+                result = {"success": False, "error": "Controller not configured"}
             self.send_json_response(result)
         except Exception as e:
             self.send_json_response({"success": False, "error": str(e)})
 
-    async def _start_zone_async(self, request_data):
-        zone_id = request_data.get('zone_id')
-        duration = request_data.get('duration', 10)
-
-        controller_data = await self.get_controller()
-        if not controller_data:
-            return {"success": False, "error": "Controller not configured"}
-
-        controller, session = controller_data
-        try:
-            # Start irrigation on the specified zone
-            await controller.irrigate_zone(zone_id, duration)
-            
-            # Track the started zone with timing info
-            self.set_active_zone(zone_id, duration)
-            
-            # Wait for controller to process command (like CLI does)
-            await asyncio.sleep(2)
-            
-            return {"success": True, "message": f"Zone {zone_id} started for {duration} minutes"}
-        finally:
-            # Don't close session - it's managed now
-            pass
+    async def _do_start_zone(self, controller, zone_id, duration):
+        await controller.irrigate_zone(zone_id, duration)
+        self.set_active_zone(zone_id, duration)
+        await asyncio.sleep(1)
+        return {"success": True, "message": f"Zone {zone_id} started for {duration} minutes"}
 
     def handle_stop_zone(self, request_data):
-        """API endpoint: POST /api/zones/stop - Stop irrigation on a specific zone."""
+        """API endpoint: POST /api/zones/stop"""
         try:
-            result = self.run_async(self._stop_zone_async(request_data))
+            result = self.run_async(self.with_controller(self._do_stop))
+            if result is None:
+                result = {"success": False, "error": "Controller not configured"}
             self.send_json_response(result)
         except Exception as e:
             self.send_json_response({"success": False, "error": str(e)})
-
-    async def _stop_zone_async(self, request_data):
-        zone_id = request_data.get('zone_id')
-
-        controller_data = await self.get_controller()
-        if not controller_data:
-            return {"success": False, "error": "Controller not configured"}
-
-        controller, session = controller_data
-        try:
-            # Stop all irrigation (ESP-ME3 stops all zones)
-            await controller.stop_irrigation()
-            
-            # Clear the tracked zone
-            self.set_active_zone(None)
-            
-            return {"success": True, "message": f"Zone {zone_id} stopped"}
-        finally:
-            # Don't close session - it's managed now
-            pass
 
     def handle_stop_all_zones(self, request_data):
-        """API endpoint: POST /api/zones/stop-all - Stop all irrigation"""
+        """API endpoint: POST /api/zones/stop-all"""
         try:
-            result = self.run_async(self._stop_all_zones_async())
+            result = self.run_async(self.with_controller(self._do_stop))
+            if result is None:
+                result = {"success": False, "error": "Controller not configured"}
             self.send_json_response(result)
         except Exception as e:
             self.send_json_response({"success": False, "error": str(e)})
 
-    async def _stop_all_zones_async(self):
-        controller_data = await self.get_controller()
-        if not controller_data:
-            return {"success": False, "error": "Controller not configured"}
+    async def _do_stop(self, controller):
+        await controller.stop_irrigation()
+        self.set_active_zone(None)
+        return {"success": True, "message": "Irrigation stopped"}
 
-        controller, session = controller_data
-        try:
-            await controller.stop_irrigation()
-            self.set_active_zone(None)
-            return {"success": True, "message": "All irrigation stopped"}
-        finally:
-            # Don't close session - it's managed now
-            pass
+    def handle_adjust_zone(self, request_data):
+        """API endpoint: POST /api/zones/adjust — add/subtract minutes from active zone.
 
-    def handle_rain_sensor_override(self, request_data):
-        """API endpoint: POST /api/rain-sensor/override - Override rain sensor"""
+        Adjusts the running zone by stopping it and restarting for the new remaining
+        time, since the ESP-ME3 has no native 'add time' command.
+        """
         try:
-            result = self.run_async(self._rain_sensor_override_async(request_data))
+            delta = int(request_data.get('delta', 0))  # minutes, positive or negative
+            zone_info = self.get_active_zone()
+            if not zone_info or not zone_info.get('zone_id'):
+                self.send_json_response({"success": False, "error": "No zone running"})
+                return
+
+            zone_id = zone_info['zone_id']
+            elapsed = time.time() - zone_info.get('start_time', time.time())
+            current_remaining = max(0, (zone_info.get('duration', 0) * 60) - elapsed)
+            new_remaining = max(1, int(current_remaining / 60) + delta)  # minutes
+
+            result = self.run_async(self.with_controller(
+                lambda c: self._do_adjust(c, zone_id, new_remaining)
+            ))
+            if result is None:
+                result = {"success": False, "error": "Controller not configured"}
             self.send_json_response(result)
         except Exception as e:
             self.send_json_response({"success": False, "error": str(e)})
 
-    async def _rain_sensor_override_async(self, request_data):
-        override = request_data.get('override', False)
-        # Note: ESP-ME3 doesn't support rain sensor override via API
-        # This would be a mock implementation
-        return {"success": True, "message": f"Rain sensor override {'enabled' if override else 'disabled'}"}
+    async def _do_adjust(self, controller, zone_id, new_minutes):
+        await controller.stop_irrigation()
+        await asyncio.sleep(1)
+        await controller.irrigate_zone(zone_id, new_minutes)
+        self.set_active_zone(zone_id, new_minutes)
+        return {"success": True, "minutes": new_minutes}
 
     def handle_connection_status(self):
-        """API endpoint: GET /api/connection/status - Get connection status"""
-        try:
-            settings = self.load_settings()
-            session_key = f"{settings.get('controller_ip', '')}:{settings.get('controller_password', '')}"
-            
-            if session_key in active_sessions:
-                session_data = active_sessions[session_key]
-                status = {
-                    "success": True,
-                    "connected": True,
-                    "controller_ip": settings.get('controller_ip'),
-                    "session_age": int(time.time() - session_data['created']),
-                    "last_used": int(time.time() - session_data['last_used']),
-                    "session_count": len(active_sessions)
-                }
-            else:
-                status = {
-                    "success": True,
-                    "connected": False,
-                    "controller_ip": settings.get('controller_ip'),
-                    "session_count": len(active_sessions)
-                }
-            
-            self.send_json_response(status)
-        except Exception as e:
-            self.send_json_response({"success": False, "error": str(e)})
+        """API endpoint: GET /api/connection/status"""
+        settings = self.load_settings()
+        self.send_json_response({
+            "success": True,
+            "connected": bool(settings.get('controller_ip')),
+            "controller_ip": settings.get('controller_ip')
+        })
 
     def handle_diagnostics(self):
-        """API endpoint: GET /api/diagnostics - Get system diagnostics"""
+        """API endpoint: GET /api/diagnostics"""
         try:
-            result = self.run_async(self._diagnostics_async())
+            result = self.run_async(self.with_controller(self._do_diagnostics))
+            if result is None:
+                result = {"success": False, "error": "Controller not configured"}
             self.send_json_response(result)
         except Exception as e:
             self.send_json_response({"success": False, "error": str(e)})
 
-    async def _diagnostics_async(self):
+    async def _do_diagnostics(self, controller):
         settings = self.load_settings()
-        diagnostics = {
+        try:
+            await controller.get_current_irrigation()
+            reachable, test = True, "SUCCESS"
+        except Exception as ex:
+            reachable, test = False, f"FAILED - {ex}"
+        return {
             "success": True,
-            "controller_configured": bool(settings.get('controller_ip') and settings.get('controller_password')),
-            "active_sessions": len(active_sessions),
-            "settings_file": "config.json",
+            "controller_configured": True,
+            "controller_reachable": reachable,
+            "connection_test": test,
             "zones_configured": len(settings.get('zone_names', {}))
         }
-        
-        # Test controller connection if configured
-        if diagnostics["controller_configured"]:
-            try:
-                controller_data = await self.get_controller()
-                if controller_data:
-                    controller, session = controller_data
-                    await controller.get_current_irrigation()
-                    diagnostics["controller_reachable"] = True
-                    diagnostics["connection_test"] = "SUCCESS"
-                else:
-                    diagnostics["controller_reachable"] = False
-                    diagnostics["connection_test"] = "FAILED - Not configured"
-            except Exception as e:
-                diagnostics["controller_reachable"] = False
-                diagnostics["connection_test"] = f"FAILED - {str(e)}"
-        else:
-            diagnostics["controller_reachable"] = False
-            diagnostics["connection_test"] = "SKIPPED - Not configured"
-        
-        return diagnostics
     
     def handle_settings(self, request_data):
         """
@@ -732,7 +627,7 @@ class RainBirdHandler(BaseHTTPRequestHandler):
             return False
 
     def run_async(self, coro):
-        """Run async coroutine in sync context"""
+        """Run async coroutine in a fresh event loop."""
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
@@ -740,63 +635,20 @@ class RainBirdHandler(BaseHTTPRequestHandler):
         finally:
             loop.close()
 
-    async def get_controller(self):
-        """Get configured controller instance with session management"""
+    async def with_controller(self, coro_fn):
+        """Create a fresh session+controller, run coro_fn(controller), close session."""
         settings = self.load_settings()
         if not settings.get('controller_ip') or not settings.get('controller_password'):
             return None
-        
-        # Cleanup old sessions periodically
-        global last_cleanup
-        if time.time() - last_cleanup > 300:  # 5 minutes
-            self.cleanup_idle_sessions()
-            last_cleanup = time.time()
-        
-        session_key = f"{settings['controller_ip']}:{settings['controller_password']}"
-        
-        # Check if we have an active session
-        if session_key in active_sessions:
-            session_data = active_sessions[session_key]
-            # Test if session is still alive
-            try:
-                controller, session = session_data['controller'], session_data['session']
-                # Quick health check
-                await asyncio.wait_for(controller.get_current_irrigation(), timeout=2)
-                session_data['last_used'] = time.time()
-                return controller, session
-            except:
-                # Session is dead, remove it
-                try:
-                    await session_data['session'].close()
-                except:
-                    pass
-                del active_sessions[session_key]
-        
-        # Create new session
-        session = aiohttp.ClientSession()
-        controller = async_client.CreateController(
-            session, settings['controller_ip'], settings['controller_password']
-        )
-        
-        active_sessions[session_key] = {
-            'controller': controller,
-            'session': session,
-            'last_used': time.time(),
-            'created': time.time()
-        }
-        
-        return controller, session
-
-    def cleanup_idle_sessions(self):
-        """Clean up idle sessions"""
-        cutoff = time.time() - 300  # 5 minutes
-        for key in list(active_sessions.keys()):
-            if active_sessions[key]['last_used'] < cutoff:
-                try:
-                    active_sessions[key]['session'].close()
-                except:
-                    pass
-                del active_sessions[key]
+        timeout = aiohttp.ClientTimeout(total=10)
+        session = aiohttp.ClientSession(timeout=timeout)
+        try:
+            controller = async_client.CreateController(
+                session, settings['controller_ip'], settings['controller_password']
+            )
+            return await coro_fn(controller)
+        finally:
+            await session.close()
 
     def load_settings(self):
         """Load application settings from config.json file."""
