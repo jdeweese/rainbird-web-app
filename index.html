@@ -8,1050 +8,563 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         :root {
-            --brand: #1a73e8;
-            --brand-dark: #1557b0;
-            --ok: #1e8e3e;
-            --ok-bg: #e6f4ea;
-            --ok-border: #a8d5b5;
-            --warn: #e37400;
-            --danger: #d93025;
-            --text: #202124;
-            --text-2: #5f6368;
-            --border: #dadce0;
-            --surface: #ffffff;
-            --bg: #f1f3f4;
-            --radius: 12px;
+            --brand: #1a73e8; --brand-dark: #1557b0;
+            --ok: #1e8e3e; --ok-bg: #e6f4ea; --ok-border: #a8d5b5;
+            --warn: #e37400; --danger: #d93025;
+            --text: #202124; --text-2: #5f6368; --border: #dadce0;
+            --surface: #fff; --bg: #f1f3f4; --radius: 12px;
         }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg);
-            min-height: 100vh;
-            color: var(--text);
-            font-size: 14px;
-        }
-
-        /* ── Layout ────────────────────────────────────── */
-        .app { display: flex; flex-direction: column; min-height: 100vh; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; min-height: 100vh; }
 
         .topbar {
-            background: var(--brand);
-            color: #fff;
-            padding: 0 16px;
-            height: 56px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            box-shadow: 0 2px 8px rgba(0,0,0,.18);
+            background: var(--brand); color: #fff; height: 56px; padding: 0 16px;
+            display: flex; align-items: center; gap: 12px;
+            position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,.18);
         }
-
-        .topbar-title {
-            font-size: 18px;
-            font-weight: 500;
-            flex: 1;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .conn-dot {
-            width: 9px; height: 9px;
-            border-radius: 50%;
-            background: rgba(255,255,255,.35);
-            flex-shrink: 0;
-            transition: background .4s;
-        }
-        .conn-dot.ok  { background: #34a853; box-shadow: 0 0 0 3px rgba(52,168,83,.25); }
+        .topbar-title { font-size: 18px; font-weight: 500; flex: 1; display: flex; align-items: center; gap: 8px; }
+        .conn-dot { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,.35); transition: background .4s; flex-shrink: 0; }
+        .conn-dot.ok { background: #34a853; box-shadow: 0 0 0 3px rgba(52,168,83,.25); }
         .conn-dot.err { background: #ea4335; box-shadow: 0 0 0 3px rgba(234,67,53,.25); }
-
         .topbar-status { font-size: 12px; opacity: .85; }
-
-        .icon-btn {
-            background: rgba(255,255,255,.12);
-            border: none; color: #fff;
-            width: 36px; height: 36px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-            transition: background .2s;
-            flex-shrink: 0;
-        }
+        .icon-btn { background: rgba(255,255,255,.12); border: none; color: #fff; width: 36px; height: 36px;
+                    border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;
+                    transition: background .2s; flex-shrink: 0; }
         .icon-btn:hover { background: rgba(255,255,255,.22); }
 
-        .main { flex: 1; padding: 16px; max-width: 900px; margin: 0 auto; width: 100%; }
+        .main { max-width: 760px; margin: 0 auto; padding: 16px; }
 
-        /* ── Active banner ──────────────────────────────── */
-        .active-banner {
-            display: none;
-            background: var(--ok-bg);
-            border: 1px solid var(--ok-border);
-            border-left: 4px solid var(--ok);
-            border-radius: var(--radius);
-            padding: 16px 20px;
-            margin-bottom: 16px;
-        }
-        .active-banner.show { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+                padding: 18px; margin-bottom: 16px; }
+        .card-label { font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase;
+                      letter-spacing: .6px; margin-bottom: 12px; }
 
-        .banner-info { flex: 1; min-width: 0; }
-        .banner-label { font-size: 11px; font-weight: 600; text-transform: uppercase;
-                        letter-spacing: .8px; color: var(--ok); margin-bottom: 2px; }
-        .banner-zone  { font-size: 20px; font-weight: 500; color: #0d652d;
-                        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        /* Running banner */
+        .running { background: var(--ok-bg); border: 1px solid var(--ok-border); border-left: 4px solid var(--ok); }
+        .running-top { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+        .running-info { flex: 1; min-width: 0; }
+        .running-zone { font-size: 20px; font-weight: 500; color: #0d652d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .running-timer { font-size: 40px; font-weight: 300; color: #0d652d; font-variant-numeric: tabular-nums; line-height: 1; }
+        .running-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+        .adj-group { display: flex; gap: 6px; }
+        .adj-btn { background: var(--surface); border: 1px solid var(--ok-border); color: var(--ok);
+                   border-radius: 8px; padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: pointer;
+                   transition: background .15s; min-width: 48px; }
+        .adj-btn:hover:not(:disabled) { background: #c8e6c9; }
+        .adj-btn:disabled { opacity: .45; cursor: default; }
+        .btn-stop { margin-left: auto; background: var(--danger); color: #fff; border: none; border-radius: 20px;
+                    padding: 8px 18px; font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .btn-stop:hover { background: #b52d22; }
 
-        .banner-timer {
-            font-size: 36px; font-weight: 300; color: #0d652d;
-            font-variant-numeric: tabular-nums; line-height: 1;
-            white-space: nowrap;
-        }
+        /* Zone picker */
+        .zone-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
+        .zone-pick { border: 1px solid var(--border); background: var(--bg); border-radius: 8px; padding: 10px 8px;
+                     cursor: pointer; text-align: left; transition: all .15s; display: flex; align-items: center; gap: 8px; }
+        .zone-pick:hover { border-color: var(--brand); background: #e8f0fe; }
+        .zone-pick.selected { border-color: var(--brand); background: var(--brand); color: #fff; }
+        .zone-pick .num { width: 24px; height: 24px; border-radius: 50%; background: var(--brand); color: #fff;
+                          font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .zone-pick.selected .num { background: rgba(255,255,255,.25); }
+        .zone-pick .zn { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        .banner-controls {
-            display: flex; align-items: center; gap: 8px; flex-shrink: 0;
-        }
-
-        .btn-adjust {
-            background: rgba(255,255,255,.15);
-            border: 1px solid rgba(255,255,255,.3);
-            color: #0d652d; width: 36px; height: 36px; border-radius: 50%;
-            font-size: 20px; font-weight: 300; cursor: pointer; line-height: 1;
-            display: flex; align-items: center; justify-content: center;
-            transition: background .15s; flex-shrink: 0;
-            background: var(--ok-bg); border-color: var(--ok-border);
-        }
-        .btn-adjust:hover { background: #c8e6c9; }
-        .btn-adjust:disabled { opacity: .4; cursor: default; }
-
-        .adjust-label {
-            font-size: 11px; color: var(--ok); text-align: center;
-            white-space: nowrap; min-width: 40px;
-        }
-
-        .btn-stop-banner {
-            background: var(--danger);
-            color: #fff; border: none;
-            padding: 8px 18px; border-radius: 20px;
-            font-size: 13px; font-weight: 500; cursor: pointer;
-            display: flex; align-items: center; gap: 6px;
-            transition: background .2s; white-space: nowrap;
-        }
-        .btn-stop-banner:hover { background: #b52d22; }
-
-        /* ── Zone grid ──────────────────────────────────── */
-        .section-header {
-            display: flex; align-items: center; justify-content: space-between;
-            margin-bottom: 12px;
-        }
-        .section-title { font-size: 13px; font-weight: 600; color: var(--text-2);
-                         text-transform: uppercase; letter-spacing: .6px; }
-
-        .zones-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-            gap: 12px;
-        }
-
-        .zone-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 16px;
-            transition: box-shadow .15s, border-color .15s;
-        }
-        .zone-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.1); }
-        .zone-card.active {
-            border-color: var(--ok);
-            background: var(--ok-bg);
-            box-shadow: 0 0 0 2px rgba(30,142,62,.18);
-        }
-
-        .zone-header {
-            display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
-        }
-
-        .zone-num {
-            width: 28px; height: 28px;
-            background: var(--brand);
-            color: #fff; border-radius: 50%;
-            font-size: 12px; font-weight: 600;
-            display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0;
-        }
-        .zone-card.active .zone-num { background: var(--ok); }
-
-        .zone-name-wrap { flex: 1; min-width: 0; }
-
-        .zone-name {
-            font-size: 15px; font-weight: 500;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-            cursor: pointer;
-            padding: 2px 4px; border-radius: 4px;
-            transition: background .15s;
-        }
-        .zone-name:hover { background: rgba(0,0,0,.05); }
-
-        .zone-name-input {
-            width: 100%; font-size: 15px; font-weight: 500;
-            border: 1px solid var(--brand); border-radius: 4px;
-            padding: 2px 6px; outline: none; font-family: inherit;
-            background: #fff;
-        }
-
-        .zone-name-hint {
-            font-size: 11px; color: var(--text-2); margin-top: 1px;
-            height: 14px; transition: opacity .3s;
-        }
-
-        /* Duration chips */
-        .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
-
-        .chip {
-            padding: 4px 12px; border-radius: 16px;
-            border: 1px solid var(--border);
-            background: var(--bg); color: var(--text-2);
-            font-size: 12px; font-weight: 500; cursor: pointer;
-            transition: all .15s; user-select: none;
-        }
-        .chip:hover  { border-color: var(--brand); color: var(--brand); background: #e8f0fe; }
-        .chip.active { border-color: var(--brand); color: #fff; background: var(--brand); }
-
-        .chip-custom {
-            display: flex; align-items: center; gap: 4px;
-            padding: 4px 8px; border-radius: 16px;
-            border: 1px solid var(--border);
-            background: var(--bg); cursor: text;
-            transition: border-color .15s;
-        }
+        /* Time chips */
+        .chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+        .chip { padding: 8px 16px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg);
+                color: var(--text-2); font-size: 14px; font-weight: 500; cursor: pointer; transition: all .15s; }
+        .chip:hover { border-color: var(--brand); color: var(--brand); background: #e8f0fe; }
+        .chip.selected { border-color: var(--brand); background: var(--brand); color: #fff; }
+        .chip-custom { display: flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px;
+                       border: 1px solid var(--border); background: var(--bg); }
         .chip-custom:focus-within { border-color: var(--brand); }
-        .chip-custom input {
-            width: 36px; border: none; background: transparent;
-            font-size: 12px; font-weight: 500; color: var(--text);
-            font-family: inherit; outline: none; text-align: center;
-        }
-        .chip-custom span { font-size: 11px; color: var(--text-2); }
+        .chip-custom input { width: 64px; border: none; background: transparent; font-size: 14px; font-weight: 500;
+                             color: var(--text); font-family: inherit; outline: none; text-align: center; }
+        .chip-custom input::placeholder { font-size: 12px; }
+        .chip-custom span { font-size: 12px; color: var(--text-2); }
 
-        /* Run / Stop buttons */
-        .zone-actions { display: flex; gap: 8px; }
-
-        .btn-run {
-            flex: 1; padding: 9px 0;
-            background: var(--brand); color: #fff; border: none;
-            border-radius: 8px; font-size: 13px; font-weight: 500;
-            cursor: pointer; display: flex; align-items: center;
-            justify-content: center; gap: 6px;
-            transition: background .2s;
-        }
+        .action-row { display: flex; gap: 10px; margin-top: 16px; }
+        .btn { border: none; border-radius: 8px; padding: 12px 18px; font-size: 14px; font-weight: 500; cursor: pointer;
+               display: flex; align-items: center; justify-content: center; gap: 6px; transition: all .2s; }
+        .btn:disabled { opacity: .45; cursor: default; }
+        .btn-run { flex: 1; background: var(--brand); color: #fff; }
         .btn-run:hover:not(:disabled) { background: var(--brand-dark); }
-        .btn-run:disabled { opacity: .45; cursor: default; }
+        .btn-queue { flex: 1; background: var(--surface); color: var(--brand); border: 1px solid var(--brand); }
+        .btn-queue:hover:not(:disabled) { background: #e8f0fe; }
 
-        .btn-stop {
-            padding: 9px 14px;
-            background: transparent; color: var(--danger);
-            border: 1px solid var(--danger); border-radius: 8px;
-            font-size: 13px; font-weight: 500; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; gap: 4px;
-            transition: all .2s;
-        }
-        .btn-stop:hover { background: var(--danger); color: #fff; }
+        /* Queue */
+        .queue-item { display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--border);
+                      border-radius: 8px; margin-bottom: 8px; background: var(--surface); }
+        .queue-item.running { background: var(--ok-bg); border-color: var(--ok-border); }
+        .queue-pos { width: 22px; height: 22px; border-radius: 50%; background: var(--bg); color: var(--text-2);
+                     font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .queue-item.running .queue-pos { background: var(--ok); color: #fff; }
+        .queue-main { flex: 1; min-width: 0; }
+        .queue-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .queue-sub { font-size: 12px; color: var(--text-2); }
+        .queue-actions { display: flex; gap: 4px; flex-shrink: 0; }
+        .q-icon { background: none; border: none; cursor: pointer; color: var(--text-2); width: 32px; height: 32px;
+                  border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+        .q-icon:hover { background: var(--bg); color: var(--brand); }
+        .q-icon:disabled { opacity: .3; cursor: default; }
+        .q-icon.danger:hover { color: var(--danger); }
 
-        /* ── Config mode ───────────────────────────────── */
-        .config-bar {
-            background: #fff8e1;
-            border: 1px solid #ffe082;
-            border-left: 4px solid var(--warn);
-            border-radius: var(--radius);
-            padding: 10px 16px;
-            margin-bottom: 16px;
-            display: flex; align-items: center; gap: 12px;
-            font-size: 13px; color: #5d4037;
-        }
-        .config-bar .material-icons { font-size: 18px; color: var(--warn); flex-shrink: 0; }
-        .config-bar-text { flex: 1; }
+        .empty { text-align: center; padding: 28px 16px; color: var(--text-2); }
+        .empty .material-icons { font-size: 40px; color: var(--border); margin-bottom: 8px; }
 
-        .btn-done {
-            background: var(--warn); color: #fff; border: none;
-            border-radius: 8px; padding: 6px 16px;
-            font-size: 13px; font-weight: 500; cursor: pointer;
-            display: flex; align-items: center; gap: 4px;
-            transition: background .2s; white-space: nowrap; flex-shrink: 0;
-        }
-        .btn-done:hover { background: #c76300; }
-
-        .zone-card.zone-hidden {
-            opacity: .45;
-            border-style: dashed;
-        }
-        .zone-card.zone-hidden:hover { opacity: .65; }
-
-        .btn-vis {
-            width: 100%; padding: 9px 0;
-            border: 1px solid var(--border); border-radius: 8px;
-            background: var(--bg); color: var(--text-2);
-            font-size: 13px; font-weight: 500; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; gap: 6px;
-            transition: all .15s;
-        }
-        .btn-vis:hover { border-color: var(--brand); color: var(--brand); background: #e8f0fe; }
-        .zone-card.zone-hidden .btn-vis {
-            border-color: var(--ok); color: var(--ok); background: var(--ok-bg);
-        }
-        .zone-card.zone-hidden .btn-vis:hover { background: #c8e6c9; }
-
-        .edit-zones-btn {
-            background: none; color: var(--text-2);
-            border: 1px solid var(--border); border-radius: 8px;
-            padding: 4px 12px; font-size: 12px; font-weight: 500;
-            cursor: pointer; display: flex; align-items: center; gap: 4px;
-            transition: all .15s;
-        }
-        .edit-zones-btn:hover { border-color: var(--brand); color: var(--brand); }
-
-        /* ── Unconfigured state ─────────────────────────── */
-        .empty-state {
-            text-align: center; padding: 48px 24px;
-            background: var(--surface); border-radius: var(--radius);
-            border: 1px dashed var(--border);
-        }
+        /* Empty/unconfigured */
+        .empty-state { text-align: center; padding: 48px 24px; }
         .empty-state .material-icons { font-size: 48px; color: var(--border); margin-bottom: 12px; }
         .empty-state h2 { font-size: 16px; font-weight: 500; margin-bottom: 6px; }
-        .empty-state p  { color: var(--text-2); margin-bottom: 20px; }
-        .btn-primary {
-            display: inline-flex; align-items: center; gap: 6px;
-            background: var(--brand); color: #fff; border: none;
-            padding: 10px 20px; border-radius: 8px;
-            font-size: 14px; font-weight: 500; cursor: pointer;
-            transition: background .2s;
-        }
+        .empty-state p { color: var(--text-2); margin-bottom: 20px; }
+        .btn-primary { display: inline-flex; align-items: center; gap: 6px; background: var(--brand); color: #fff;
+                       border: none; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; }
         .btn-primary:hover { background: var(--brand-dark); }
 
-        /* ── Toast ──────────────────────────────────────── */
-        #toast-container {
-            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-            z-index: 9999; display: flex; flex-direction: column; gap: 8px;
-            align-items: center; pointer-events: none;
-        }
-        .toast {
-            background: #323232; color: #fff;
-            padding: 10px 20px; border-radius: 8px;
-            font-size: 13px; font-weight: 400;
-            box-shadow: 0 4px 12px rgba(0,0,0,.25);
-            animation: toast-in .2s ease;
-            pointer-events: auto;
-        }
-        .toast.error { background: #d93025; }
-        .toast.ok    { background: var(--ok); }
-        @keyframes toast-in { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
+        /* Toast */
+        #toasts { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 9999;
+                  display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; }
+        .toast { background: #323232; color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 13px;
+                 box-shadow: 0 4px 12px rgba(0,0,0,.25); animation: tin .2s ease; }
+        .toast.error { background: var(--danger); }
+        .toast.ok { background: var(--ok); }
+        @keyframes tin { from { opacity:0; transform:translateY(12px);} to {opacity:1;transform:none;} }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* ── Settings popup ─────────────────────────────── */
-        .overlay {
-            position: fixed; inset: 0;
-            background: rgba(0,0,0,.45);
-            display: none; align-items: center; justify-content: center;
-            padding: 16px; z-index: 500;
-        }
+        /* Settings + config dialogs */
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: none; align-items: center;
+                   justify-content: center; padding: 16px; z-index: 500; }
         .overlay.show { display: flex; }
-
-        .panel {
-            background: var(--surface);
-            border-radius: var(--radius);
-            width: 100%; max-width: 420px;
-            box-shadow: 0 8px 32px rgba(0,0,0,.2);
-            overflow: hidden;
-        }
-        .panel-header {
-            padding: 16px 20px;
-            display: flex; align-items: center; gap: 10px;
-            border-bottom: 1px solid var(--border);
-        }
+        .panel { background: var(--surface); border-radius: var(--radius); width: 100%; max-width: 440px;
+                 box-shadow: 0 8px 32px rgba(0,0,0,.2); max-height: 90vh; display: flex; flex-direction: column; }
+        .panel-header { padding: 16px 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
         .panel-header .material-icons { color: var(--brand); }
         .panel-title { font-size: 16px; font-weight: 600; flex: 1; }
-        .close-btn {
-            background: none; border: none; cursor: pointer;
-            color: var(--text-2); width: 32px; height: 32px;
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            transition: background .15s;
-        }
+        .close-btn { background: none; border: none; cursor: pointer; color: var(--text-2); width: 32px; height: 32px;
+                     border-radius: 50%; display: flex; align-items: center; justify-content: center; }
         .close-btn:hover { background: var(--bg); }
-
-        .panel-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
-
-        .field label {
-            display: block; font-size: 12px; font-weight: 500;
-            color: var(--text-2); margin-bottom: 4px;
-            text-transform: uppercase; letter-spacing: .5px;
-        }
-        .field-row { display: flex; gap: 8px; align-items: stretch; }
+        .panel-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+        .field label { display: block; font-size: 12px; font-weight: 500; color: var(--text-2); margin-bottom: 4px;
+                       text-transform: uppercase; letter-spacing: .5px; }
+        .field-row { display: flex; gap: 8px; }
         .field-row input { flex: 1; }
-
-        input[type="text"], input[type="password"], input[type="number"] {
-            width: 100%; padding: 9px 12px;
-            border: 1px solid var(--border); border-radius: 8px;
-            font-size: 14px; font-family: inherit; color: var(--text);
-            background: var(--surface); outline: none;
-            transition: border-color .15s;
-        }
+        input[type=text], input[type=password], input[type=number] { width: 100%; padding: 9px 12px; border: 1px solid var(--border);
+                       border-radius: 8px; font-size: 14px; font-family: inherit; color: var(--text); outline: none; }
         input:focus { border-color: var(--brand); }
-
-        .scan-btn {
-            background: var(--bg); color: var(--text);
-            border: 1px solid var(--border); border-radius: 8px;
-            padding: 0 14px; font-size: 13px; font-weight: 500;
-            cursor: pointer; white-space: nowrap;
-            display: flex; align-items: center; gap: 6px;
-            transition: border-color .15s, background .15s;
-        }
+        .scan-btn { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 0 14px;
+                    font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
         .scan-btn:hover { border-color: var(--brand); color: var(--brand); background: #e8f0fe; }
-        .scan-btn:disabled { opacity: .5; cursor: default; }
+        .scan-results { display: none; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+        .scan-item { width: 100%; background: none; border: none; border-bottom: 1px solid var(--border); padding: 10px 14px;
+                     cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 13px; text-align: left; }
+        .scan-item:last-child { border-bottom: none; }
+        .scan-item:hover { background: var(--bg); }
+        .scan-item .material-icons { font-size: 16px; color: var(--ok); }
+        .panel-footer { padding: 12px 20px; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border); }
+        .btn-cancel { background: none; color: var(--text-2); border: 1px solid var(--border); border-radius: 8px;
+                      padding: 8px 18px; font-size: 13px; font-weight: 500; cursor: pointer; }
+        .btn-save { background: var(--brand); color: #fff; border: none; border-radius: 8px; padding: 8px 20px;
+                    font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px; }
 
-        .scan-results {
-            display: none;
-            border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
-            margin-top: -8px;
-        }
-        .scan-result-item {
-            width: 100%; background: none; border: none;
-            border-bottom: 1px solid var(--border);
-            padding: 10px 14px; cursor: pointer;
-            display: flex; align-items: center; gap: 10px;
-            font-size: 13px; color: var(--text); text-align: left;
-            transition: background .15s;
-        }
-        .scan-result-item:last-child { border-bottom: none; }
-        .scan-result-item:hover { background: var(--bg); }
-        .scan-result-item .material-icons { font-size: 16px; color: var(--ok); }
-        .scan-result-item .scan-hint { margin-left: auto; font-size: 11px; color: var(--text-2); }
-
-        .panel-footer {
-            padding: 12px 20px;
-            display: flex; justify-content: flex-end; gap: 10px;
-            border-top: 1px solid var(--border);
-        }
-        .btn-cancel {
-            background: none; color: var(--text-2);
-            border: 1px solid var(--border); border-radius: 8px;
-            padding: 8px 18px; font-size: 13px; font-weight: 500;
-            cursor: pointer; transition: all .15s;
-        }
-        .btn-cancel:hover { border-color: var(--text-2); color: var(--text); }
-
-        .btn-save {
-            background: var(--brand); color: #fff; border: none;
-            border-radius: 8px; padding: 8px 20px;
-            font-size: 13px; font-weight: 500; cursor: pointer;
-            display: flex; align-items: center; gap: 6px;
-            transition: background .2s;
-        }
-        .btn-save:hover { background: var(--brand-dark); }
-
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to   { transform: rotate(360deg); }
-        }
+        /* Config-mode zone visibility list */
+        .vis-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--border);
+                   border-radius: 8px; margin-bottom: 6px; }
+        .vis-row.off { opacity: .5; border-style: dashed; }
+        .vis-name { flex: 1; font-size: 14px; }
+        .vis-name input { font-size: 14px; padding: 4px 8px; }
+        .vis-toggle { background: none; border: none; cursor: pointer; color: var(--text-2); }
+        .vis-row:not(.off) .vis-toggle { color: var(--ok); }
 
         @media (max-width: 480px) {
-            .zones-grid { grid-template-columns: 1fr; }
-            .banner-timer { font-size: 28px; }
+            .running-timer { font-size: 32px; }
+            .zone-grid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
         }
     </style>
 </head>
 <body>
-<div class="app">
-
-    <!-- Top bar -->
     <div class="topbar">
         <div class="conn-dot" id="connDot"></div>
-        <div class="topbar-title">
-            <span class="material-icons" style="font-size:20px;">grass</span>
-            RainBird
-        </div>
-        <span class="topbar-status" id="connLabel">Not connected</span>
+        <div class="topbar-title"><span class="material-icons" style="font-size:20px;">grass</span> RainBird</div>
+        <span class="topbar-status" id="connLabel">Connecting…</span>
+        <button class="icon-btn" onclick="openConfig()" title="Edit zones" aria-label="Edit zones">
+            <span class="material-icons" style="font-size:20px;">tune</span>
+        </button>
         <button class="icon-btn" onclick="openSettings()" title="Settings" aria-label="Settings">
             <span class="material-icons" style="font-size:20px;">settings</span>
         </button>
     </div>
 
-    <div class="main">
+    <div class="main" id="main"><!-- rendered by JS --></div>
 
-        <!-- Active zone banner -->
-        <div class="active-banner" id="activeBanner">
-            <div class="banner-info">
-                <div class="banner-label">Running now</div>
-                <div class="banner-zone" id="bannerZoneName">—</div>
+    <div id="toasts"></div>
+
+    <!-- Settings dialog -->
+    <div class="overlay" id="settingsOverlay">
+        <div class="panel">
+            <div class="panel-header">
+                <span class="material-icons">settings</span>
+                <div class="panel-title">Settings</div>
+                <button class="close-btn" onclick="closeSettings()"><span class="material-icons">close</span></button>
             </div>
-            <div class="banner-timer" id="bannerTimer">--:--</div>
-            <div class="banner-controls">
-                <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
-                    <button class="btn-adjust" id="adjMinus" onclick="adjustTime(-5)" title="−5 min">−</button>
-                    <span class="adjust-label">5 min</span>
+            <div class="panel-body">
+                <div class="field">
+                    <label>Controller IP address</label>
+                    <div class="field-row">
+                        <input type="text" id="cfgIp" inputmode="numeric" placeholder="192.168.1.109">
+                        <button class="scan-btn" id="scanBtn" onclick="scanNetwork()">
+                            <span class="material-icons" style="font-size:16px;" id="scanIcon">wifi_find</span> Scan
+                        </button>
+                    </div>
+                    <div class="scan-results" id="scanResults"></div>
                 </div>
-                <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
-                    <button class="btn-adjust" id="adjPlus" onclick="adjustTime(5)" title="+5 min">+</button>
-                    <span class="adjust-label">5 min</span>
-                </div>
-                <button class="btn-stop-banner" onclick="stopAll()">
-                    <span class="material-icons" style="font-size:16px;">stop</span>
-                    Stop
-                </button>
+                <div class="field"><label>Password</label><input type="password" id="cfgPwd" placeholder="Controller password"></div>
             </div>
-        </div>
-
-        <!-- Config mode banner -->
-        <div class="config-bar" id="configBar" style="display:none;">
-            <span class="material-icons">tune</span>
-            <span class="config-bar-text">Tap the eye icon on each zone to show or hide it.</span>
-            <button class="btn-done" onclick="exitConfigMode()">
-                <span class="material-icons" style="font-size:16px;">check</span>
-                Done
-            </button>
-        </div>
-
-        <!-- Zone grid / empty state -->
-        <div id="zonesArea"></div>
-
-    </div>
-</div>
-
-<!-- Toast container -->
-<div id="toast-container"></div>
-
-<!-- Settings popup -->
-<div class="overlay" id="settingsOverlay" role="dialog" aria-labelledby="settingsTitle">
-    <div class="panel">
-        <div class="panel-header">
-            <span class="material-icons">settings</span>
-            <div class="panel-title" id="settingsTitle">Settings</div>
-            <button class="close-btn" onclick="closeSettings()" aria-label="Close">
-                <span class="material-icons">close</span>
-            </button>
-        </div>
-        <div class="panel-body">
-            <div class="field">
-                <label>Controller IP address</label>
-                <div class="field-row">
-                    <input type="text" id="cfgIp" inputmode="numeric" placeholder="192.168.1.109">
-                    <button class="scan-btn" id="scanBtn" onclick="scanNetwork()">
-                        <span class="material-icons" style="font-size:16px;" id="scanIcon">wifi_find</span>
-                        Scan
-                    </button>
-                </div>
-                <div class="scan-results" id="scanResults"></div>
+            <div class="panel-footer">
+                <button class="btn-cancel" onclick="closeSettings()">Cancel</button>
+                <button class="btn-save" onclick="saveSettings()"><span class="material-icons" style="font-size:16px;">save</span> Save</button>
             </div>
-            <div class="field">
-                <label>Password</label>
-                <input type="password" id="cfgPwd" placeholder="Controller password">
-            </div>
-            <div class="field">
-                <label>Status refresh (seconds)</label>
-                <input type="number" id="cfgRefresh" min="2" max="60" placeholder="5">
-            </div>
-        </div>
-        <div class="panel-footer">
-            <button class="btn-cancel" onclick="closeSettings()">Cancel</button>
-            <button class="btn-save" onclick="saveSettings()">
-                <span class="material-icons" style="font-size:16px;">save</span>
-                Save
-            </button>
         </div>
     </div>
-</div>
+
+    <!-- Config (zone visibility + names) dialog -->
+    <div class="overlay" id="configOverlay">
+        <div class="panel">
+            <div class="panel-header">
+                <span class="material-icons">tune</span>
+                <div class="panel-title">Edit Zones</div>
+                <button class="close-btn" onclick="closeConfig()"><span class="material-icons">close</span></button>
+            </div>
+            <div class="panel-body" id="configBody"></div>
+            <div class="panel-footer">
+                <button class="btn-save" onclick="saveConfig()"><span class="material-icons" style="font-size:16px;">check</span> Done</button>
+            </div>
+        </div>
+    </div>
 
 <script>
-// ── Constants ──────────────────────────────────────────
-const DURATION_CHIPS   = [5, 10, 15, 30, 45];
-const LAST_DUR_KEY     = 'rb_last_dur';
-const VISIBLE_KEY      = 'rb_visible';
+const TIME_CHIPS = [5, 15, 30, 45, 60, 120];
+const ADJUSTS = [5, 15];
 
-// ── State ──────────────────────────────────────────────
-let allZones = [];           // [{id, name}]
-let visibleIds = [];         // zone ids to show (empty = all)
-let configMode = false;      // true while editing zone visibility
-let selectedDur = {};        // zoneId → minutes (in-memory)
-let lastDur = loadJson(LAST_DUR_KEY, {});
-let activeZone = null;       // {zone_id, name, time_remaining, duration_seconds}
-let refreshSec = 5;
-let statusTimer = null;
-let countdownTimer = null;
+let zones = [];            // [{id,name,visible}]
+let state = null;          // server state snapshot
+let selectedZone = null;
+let selectedMin = 15;
+let pollVersion = 0;
 let configured = false;
+let tickTimer = null;
 
-// ── Boot ───────────────────────────────────────────────
+// ── boot ──
 window.addEventListener('load', async () => {
-    await fetchSettings();
-    await fetchZones();
-    startPolling();
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden) { clearInterval(statusTimer); statusTimer = null; }
-        else if (!statusTimer) startPolling();
-    });
+    await loadZones();
+    await poll(true);       // initial
+    longPoll();             // continuous
+    tickTimer = setInterval(tick, 1000);  // local countdown
 });
 
-// ── Settings ───────────────────────────────────────────
-async function fetchSettings() {
-    try {
-        const r = await post('/api/settings', { action: 'load' });
-        if (!r.ok) return;
-        const s = r.data.settings || {};
-        configured = !!(s.controller_ip && s.controller_password);
-        refreshSec = Math.max(2, s.refresh_interval || 5);
-
-        const stored = loadJson(VISIBLE_KEY, null);
-        visibleIds = (s.visible_zones && s.visible_zones.length)
-            ? s.visible_zones
-            : stored || [];
-    } catch {}
-}
-
-async function saveSettings() {
-    const ip      = document.getElementById('cfgIp').value.trim();
-    const pwd     = document.getElementById('cfgPwd').value;
-    const refresh = parseInt(document.getElementById('cfgRefresh').value) || 5;
-
-    const settings = { controller_ip: ip, controller_password: pwd,
-                       refresh_interval: refresh, visible_zones: visibleIds };
-    const r = await post('/api/settings', { action: 'save', settings });
-    if (r.ok && r.data.success) {
-        configured = !!(ip && pwd);
-        refreshSec = refresh;
-        closeSettings();
-        await fetchZones();
-        restartPolling();
-        toast('Settings saved', 'ok');
-    } else {
-        toast('Save failed', 'error');
-    }
-}
-
-function openSettings() {
-    post('/api/settings', { action: 'load' }).then(r => {
-        if (!r.ok) return;
-        const s = r.data.settings || {};
-        document.getElementById('cfgIp').value = s.controller_ip || '';
-        document.getElementById('cfgPwd').value = s.controller_password || '';
-        document.getElementById('cfgRefresh').value = s.refresh_interval || 5;
-    });
-    document.getElementById('scanResults').style.display = 'none';
-    document.getElementById('settingsOverlay').classList.add('show');
-}
-
-function closeSettings() {
-    document.getElementById('settingsOverlay').classList.remove('show');
-}
-
-// ── Network scan ───────────────────────────────────────
-async function scanNetwork() {
-    const btn  = document.getElementById('scanBtn');
-    const icon = document.getElementById('scanIcon');
-    const res  = document.getElementById('scanResults');
-    btn.disabled = true;
-    icon.style.animation = 'spin 1s linear infinite';
-    icon.textContent = 'refresh';
-    res.style.display = 'none';
-    res.innerHTML = '';
-
-    try {
-        const r = await fetch('/api/scan');
-        const data = await r.json();
-        const ips = (data.controllers || []);
-        if (!ips.length) {
-            res.innerHTML = `<button class="scan-result-item" disabled style="cursor:default;color:var(--text-2);">
-                <span class="material-icons">search_off</span> No devices found on port 80</button>`;
-        } else {
-            res.innerHTML = ips.map(ip => `
-                <button class="scan-result-item" onclick="pickIp('${ip}')">
-                    <span class="material-icons">router</span>
-                    ${ip}
-                    <span class="scan-hint">tap to use</span>
-                </button>`).join('');
-        }
-        res.style.display = 'block';
-    } catch (e) {
-        res.innerHTML = `<button class="scan-result-item" disabled style="color:var(--danger);">Scan failed: ${e.message}</button>`;
-        res.style.display = 'block';
-    } finally {
-        btn.disabled = false;
-        icon.style.animation = '';
-        icon.textContent = 'wifi_find';
-    }
-}
-
-function pickIp(ip) {
-    document.getElementById('cfgIp').value = ip;
-    document.getElementById('scanResults').style.display = 'none';
-    document.getElementById('cfgPwd').focus();
-}
-
-// ── Zones ──────────────────────────────────────────────
-async function fetchZones() {
+async function loadZones() {
     try {
         const r = await fetch('/api/zones');
         const d = await r.json();
-        if (d.success) allZones = d.zones;
+        if (d.success) zones = d.zones;
     } catch {}
-    renderZones();
 }
 
-function getVisibleZones() {
-    if (!visibleIds || !visibleIds.length) return allZones;
-    return allZones.filter(z => visibleIds.includes(z.id));
-}
-
-function isZoneVisible(zoneId) {
-    return !visibleIds.length || visibleIds.includes(zoneId);
-}
-
-function renderZones() {
-    const area = document.getElementById('zonesArea');
-    document.getElementById('configBar').style.display = configMode ? 'flex' : 'none';
-
-    if (!configured) {
-        area.innerHTML = `
-            <div class="empty-state">
-                <div class="material-icons">settings_remote</div>
-                <h2>No controller configured</h2>
-                <p>Enter your RainBird controller's IP address and password to get started.</p>
-                <button class="btn-primary" onclick="openSettings()">
-                    <span class="material-icons" style="font-size:16px;">settings</span>
-                    Open Settings
-                </button>
-            </div>`;
-        return;
-    }
-
-    const displayZones = configMode ? allZones : getVisibleZones();
-
-    if (!configMode && !displayZones.length) {
-        area.innerHTML = `
-            <div class="empty-state">
-                <div class="material-icons">visibility_off</div>
-                <h2>All zones hidden</h2>
-                <p>Use Edit Zones to make zones visible again.</p>
-                <button class="btn-primary" onclick="enterConfigMode()">
-                    <span class="material-icons" style="font-size:16px;">tune</span>
-                    Edit Zones
-                </button>
-            </div>`;
-        return;
-    }
-
-    const isActive = activeZone && activeZone.zone_id;
-    area.innerHTML = `
-        <div class="section-header">
-            <span class="section-title">${configMode ? 'Edit Zones' : 'Zones'}</span>
-            ${!configMode ? `<button class="edit-zones-btn" onclick="enterConfigMode()">
-                <span class="material-icons" style="font-size:15px;">tune</span>
-                Edit zones
-            </button>` : ''}
-        </div>
-        <div class="zones-grid">
-            ${displayZones.map(z => renderZoneCard(z, isActive)).join('')}
-        </div>`;
-}
-
-function renderZoneCard(zone, anyActive) {
-    const isThisActive = activeZone && activeZone.zone_id === zone.id;
-    const visible = isZoneVisible(zone.id);
-    const dur = selectedDur[zone.id] ?? lastDur[zone.id] ?? 10;
-    const customVal = DURATION_CHIPS.includes(dur) ? '' : dur;
-
-    const chips = DURATION_CHIPS.map(m => `
-        <button class="chip ${dur === m ? 'active' : ''}"
-                onclick="setDur(${zone.id}, ${m})">${m}m</button>`).join('');
-
-    const customChip = `
-        <div class="chip-custom" title="Custom minutes" onclick="this.querySelector('input').focus()">
-            <input type="number" min="1" max="120" value="${customVal}"
-                   placeholder="?" id="custom-${zone.id}"
-                   oninput="setDur(${zone.id}, +this.value || 0)"
-                   onkeydown="if(event.key==='Enter') document.getElementById('run-${zone.id}').click()">
-            <span>min</span>
-        </div>`;
-
-    const runDisabled = anyActive && !isThisActive;
-
-    const actions = configMode
-        ? `<button class="btn-vis" onclick="toggleZoneVisibility(${zone.id})">
-               <span class="material-icons" style="font-size:16px;">${visible ? 'visibility' : 'visibility_off'}</span>
-               ${visible ? 'Visible — tap to hide' : 'Hidden — tap to show'}
-           </button>`
-        : isThisActive
-            ? `<button class="btn-stop" onclick="stopAll()">
-                   <span class="material-icons" style="font-size:16px;">stop</span> Stop
-               </button>`
-            : `<button class="btn-run" id="run-${zone.id}"
-                       onclick="runZone(${zone.id})" ${runDisabled ? 'disabled' : ''}>
-                   <span class="material-icons" style="font-size:16px;">play_arrow</span>
-                   Run ${dur}m
-               </button>`;
-
-    return `
-        <div class="zone-card ${isThisActive ? 'active' : ''} ${configMode && !visible ? 'zone-hidden' : ''}" id="card-${zone.id}">
-            <div class="zone-header">
-                <div class="zone-num">${zone.id}</div>
-                <div class="zone-name-wrap">
-                    <div class="zone-name" id="name-${zone.id}"
-                         ${configMode ? '' : `onclick="editName(${zone.id})" title="Click to rename"`}
-                         style="${configMode ? 'cursor:default;' : ''}">${esc(zone.name)}</div>
-                    <div class="zone-name-hint" id="hint-${zone.id}"></div>
-                </div>
-            </div>
-            ${configMode ? '' : `<div class="chips">${chips}${customChip}</div>`}
-            <div class="zone-actions">${actions}</div>
-        </div>`;
-}
-
-// ── Config mode (zone visibility) ─────────────────────
-function enterConfigMode() {
-    configMode = true;
-    renderZones();
-}
-
-async function exitConfigMode() {
-    configMode = false;
-    // Persist visible_zones to server
-    const r = await post('/api/settings', { action: 'save', settings: { visible_zones: visibleIds } });
-    if (!r.ok || !r.data.success) toast('Could not save zone visibility', 'error');
-    saveJson(VISIBLE_KEY, visibleIds);
-    renderZones();
-}
-
-function toggleZoneVisibility(zoneId) {
-    const visible = isZoneVisible(zoneId);
-    if (visible) {
-        // Hide: ensure visibleIds is fully populated first, then remove this one
-        if (!visibleIds.length) visibleIds = allZones.map(z => z.id);
-        visibleIds = visibleIds.filter(id => id !== zoneId);
-    } else {
-        // Show
-        visibleIds = [...visibleIds, zoneId].sort((a, b) => a - b);
-    }
-    // Re-render just this card so the rest stay stable
-    const card = document.getElementById(`card-${zoneId}`);
-    if (card) {
-        const zone = allZones.find(z => z.id === zoneId);
-        const newCard = document.createElement('div');
-        newCard.innerHTML = renderZoneCard(zone, false);
-        card.replaceWith(newCard.firstElementChild);
-    }
-}
-
-// ── Duration selection ─────────────────────────────────
-function setDur(zoneId, mins) {
-    if (!mins || mins < 1) return;
-    selectedDur[zoneId] = mins;
-    // Update chip highlight and run button label without full re-render
-    const card = document.getElementById(`card-${zoneId}`);
-    if (!card) return;
-    card.querySelectorAll('.chip').forEach(c => {
-        c.classList.toggle('active', parseInt(c.textContent) === mins);
-    });
-    const runBtn = document.getElementById(`run-${zoneId}`);
-    if (runBtn) runBtn.innerHTML = `<span class="material-icons" style="font-size:16px;">play_arrow</span> Run ${mins}m`;
-}
-
-// ── Zone name editing ──────────────────────────────────
-function editName(zoneId) {
-    const el   = document.getElementById(`name-${zoneId}`);
-    const hint = document.getElementById(`hint-${zoneId}`);
-    const current = el.textContent;
-    el.outerHTML = `<input class="zone-name-input" id="name-${zoneId}" value="${esc(current)}"
-        onblur="saveName(${zoneId})"
-        onkeydown="if(event.key==='Enter') this.blur(); if(event.key==='Escape') cancelName(${zoneId}, '${esc(current)}')"
-        autofocus>`;
-    document.getElementById(`name-${zoneId}`).select();
-}
-
-function cancelName(zoneId, original) {
-    const el = document.getElementById(`name-${zoneId}`);
-    el.outerHTML = `<div class="zone-name" id="name-${zoneId}" onclick="editName(${zoneId})" title="Click to rename">${original}</div>`;
-}
-
-async function saveName(zoneId) {
-    const el = document.getElementById(`name-${zoneId}`);
-    if (!el) return;
-    const name = el.value.trim() || `Zone ${zoneId}`;
-    el.outerHTML = `<div class="zone-name" id="name-${zoneId}" onclick="editName(${zoneId})" title="Click to rename">${esc(name)}</div>`;
-
-    // Update allZones cache
-    const zone = allZones.find(z => z.id === zoneId);
-    if (zone) zone.name = name;
-
-    // Persist to server
-    const r = await post('/api/settings', { action: 'update-zone-name', zone_id: zoneId, name });
-    const hint = document.getElementById(`hint-${zoneId}`);
-    if (hint) {
-        hint.textContent = r.ok && r.data.success ? 'Saved ✓' : 'Save failed';
-        hint.style.opacity = '1';
-        setTimeout(() => { hint.style.opacity = '0'; hint.textContent = ''; }, 2000);
-    }
-}
-
-// ── Zone control ───────────────────────────────────────
-async function runZone(zoneId) {
-    const dur = selectedDur[zoneId] ?? lastDur[zoneId] ?? 10;
-    lastDur[zoneId] = dur;
-    saveJson(LAST_DUR_KEY, lastDur);
-
-    const r = await post('/api/zones/start', { zone_id: zoneId, duration: dur });
-    if (r.ok && r.data.success) {
-        toast(`Zone ${zoneId} started for ${dur} min`);
-        await fetchStatus();
-    } else {
-        toast(r.data.error || 'Failed to start zone', 'error');
-    }
-}
-
-async function stopAll() {
-    const r = await post('/api/zones/stop-all', {});
-    if (r.ok && r.data.success) {
-        toast('Irrigation stopped');
-        await fetchStatus();
-    } else {
-        toast(r.data.error || 'Failed to stop', 'error');
-    }
-}
-
-async function adjustTime(delta) {
-    const minus = document.getElementById('adjMinus');
-    const plus  = document.getElementById('adjPlus');
-    if (minus) minus.disabled = true;
-    if (plus)  plus.disabled  = true;
-
-    const r = await post('/api/zones/adjust', { delta });
-    if (r.ok && r.data.success) {
-        // Update local countdown to new time immediately
-        if (activeZone) {
-            activeZone.time_remaining = r.data.minutes * 60;
-            activeZone.duration_seconds = r.data.minutes * 60;
-            updateBanner();
+// ── long-poll sync ──
+async function longPoll() {
+    while (true) {
+        try {
+            const r = await fetch('/api/state?since=' + pollVersion);
+            const d = await r.json();
+            if (d.success) applyState(d.state);
+        } catch {
+            setConn('err', 'Disconnected');
+            await sleep(2000);
         }
-        toast(`${delta > 0 ? '+' : ''}${delta} min`);
-    } else {
-        toast(r.data.error || 'Adjust failed', 'error');
     }
-
-    if (minus) minus.disabled = false;
-    if (plus)  plus.disabled  = false;
 }
-
-// ── Status polling ─────────────────────────────────────
-function startPolling() {
-    fetchStatus();
-    statusTimer = setInterval(fetchStatus, Math.max(2, refreshSec) * 1000);
-}
-function restartPolling() {
-    clearInterval(statusTimer);
-    startPolling();
-}
-
-async function fetchStatus() {
-    if (!configured) return;
+async function poll(initial) {
     try {
-        const r = await fetch('/api/status');
+        const r = await fetch('/api/state');
         const d = await r.json();
-        if (!d.success) { setConn('err', 'Error'); return; }
-
-        const s = d.status;
-        const was = activeZone && activeZone.zone_id;
-        const irr = s.irrigation_state;
-
-        if (irr.active && irr.zone) {
-            const zone = allZones.find(z => z.id === irr.zone);
-            activeZone = {
-                zone_id: irr.zone,
-                name: zone ? zone.name : `Zone ${irr.zone}`,
-                time_remaining: irr.time_remaining,
-                duration_seconds: irr.time_remaining // seed countdown from server
-            };
-            if (!was || was !== irr.zone) {
-                startCountdown();
-            }
-        } else {
-            const changed = !!was;
-            activeZone = null;
-            clearInterval(countdownTimer); countdownTimer = null;
-            if (changed) renderZones();
-        }
-
-        updateBanner();
-        if (!was !== !irr.active) renderZones(); // active state changed → re-render
-        setConn('ok', s.rain_sensor && s.rain_sensor.active ? 'Rain delay' : 'Connected');
-    } catch {
-        setConn('err', 'Disconnected');
-    }
+        if (d.success) applyState(d.state);
+    } catch {}
 }
 
-function setConn(state, label) {
-    document.getElementById('connDot').className = 'conn-dot ' + state;
+function applyState(s) {
+    state = s;
+    pollVersion = s.version;
+    configured = s.controller_configured;
+    setConn(s.controller_online ? 'ok' : (configured ? 'err' : ''),
+            !configured ? 'Not configured'
+            : s.controller_online ? (s.rain_sensor ? 'Rain sensor active' : 'Connected')
+            : 'Controller offline');
+    render();
+}
+
+function setConn(cls, label) {
+    document.getElementById('connDot').className = 'conn-dot ' + cls;
     document.getElementById('connLabel').textContent = label;
 }
 
-// ── Countdown ──────────────────────────────────────────
-function startCountdown() {
-    clearInterval(countdownTimer);
-    renderZones();
-    updateBanner();
-    countdownTimer = setInterval(() => {
-        if (!activeZone) { clearInterval(countdownTimer); return; }
-        activeZone.time_remaining = Math.max(0, activeZone.time_remaining - 1);
-        updateBanner();
-        // Update run button label live
-        const card = document.getElementById(`card-${activeZone.zone_id}`);
-        // (full card re-render avoided to keep inputs stable)
-    }, 1000);
+// Local 1s countdown between server updates (smooth timer)
+function tick() {
+    if (!state || !state.queue.length) return;
+    const head = state.queue[0];
+    if (head.state === 'running' && head.remaining_sec > 0) {
+        head.remaining_sec -= 1;
+        const t = document.getElementById('runTimer');
+        if (t) t.textContent = fmt(head.remaining_sec);
+    }
 }
 
-function updateBanner() {
-    const banner = document.getElementById('activeBanner');
-    if (!activeZone || !activeZone.zone_id) {
-        banner.classList.remove('show');
+// ── render ──
+function render() {
+    const main = document.getElementById('main');
+    if (!configured) {
+        main.innerHTML = `<div class="card"><div class="empty-state">
+            <div class="material-icons">settings_remote</div>
+            <h2>No controller configured</h2>
+            <p>Add your RainBird controller's IP and password to begin.</p>
+            <button class="btn-primary" onclick="openSettings()"><span class="material-icons" style="font-size:16px;">settings</span> Open Settings</button>
+        </div></div>`;
         return;
     }
-    banner.classList.add('show');
-    document.getElementById('bannerZoneName').textContent = activeZone.name;
-    document.getElementById('bannerTimer').textContent = fmt(activeZone.time_remaining);
+
+    const q = state ? state.queue : [];
+    const running = q.find(j => j.state === 'running');
+    const visibleZones = zones.filter(z => z.visible);
+
+    main.innerHTML =
+        (running ? runningCard(running) : '') +
+        pickerCard(running) +
+        queueCard(q);
+
+    // restore selection highlight
+    syncPickerSelection();
 }
 
-function fmt(sec) {
-    if (sec == null || sec <= 0) return '--:--';
-    return `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
+function runningCard(job) {
+    return `<div class="card running">
+        <div class="card-label" style="color:var(--ok);">Watering now</div>
+        <div class="running-top">
+            <div class="running-info"><div class="running-zone">${esc(job.name)}</div></div>
+            <div class="running-timer" id="runTimer">${fmt(job.remaining_sec)}</div>
+        </div>
+        <div class="running-controls">
+            <div class="adj-group">
+                ${ADJUSTS.map(m => `<button class="adj-btn" onclick="adjust(-${m})">−${m}</button>`).join('')}
+                ${ADJUSTS.map(m => `<button class="adj-btn" onclick="adjust(${m})">+${m}</button>`).join('')}
+            </div>
+            <button class="btn-stop" onclick="stopCurrent()"><span class="material-icons" style="font-size:16px;">stop</span> Stop</button>
+        </div>
+    </div>`;
 }
 
-// ── Utilities ──────────────────────────────────────────
-async function post(url, body) {
+function pickerCard(running) {
+    const vz = zones.filter(z => z.visible);
+    return `<div class="card">
+        <div class="card-label">1 · Select zone</div>
+        <div class="zone-grid">
+            ${vz.map(z => `<button class="zone-pick" data-zone="${z.id}" onclick="selectZone(${z.id})">
+                <span class="num">${z.id}</span><span class="zn">${esc(z.name)}</span></button>`).join('')}
+        </div>
+        <div class="card-label" style="margin-top:18px;">2 · Select time</div>
+        <div class="chips">
+            ${TIME_CHIPS.map(m => `<button class="chip" data-min="${m}" onclick="selectMin(${m})">${m}m</button>`).join('')}
+            <div class="chip-custom" onclick="this.querySelector('input').focus()">
+                <input type="number" min="1" max="600" id="customMin" placeholder="custom"
+                       oninput="selectMin(+this.value||0, true)"><span>min</span>
+            </div>
+        </div>
+        <div class="action-row">
+            <button class="btn btn-run" id="btnRun" onclick="runNow()">
+                <span class="material-icons" style="font-size:18px;">play_arrow</span> Run now</button>
+            <button class="btn btn-queue" id="btnQueue" onclick="addToQueue()">
+                <span class="material-icons" style="font-size:18px;">playlist_add</span> Add to queue</button>
+        </div>
+    </div>`;
+}
+
+function queueCard(q) {
+    const upcoming = q.filter(j => j.state !== 'running');
+    const running = q.find(j => j.state === 'running');
+    let rows = '';
+    if (running) rows += queueRow(running, 0, q);
+    upcoming.forEach((j, i) => { rows += queueRow(j, i + 1, q); });
+
+    return `<div class="card">
+        <div class="card-label">Queue</div>
+        ${q.length ? rows : `<div class="empty"><div class="material-icons">queue_music</div>Nothing queued</div>`}
+    </div>`;
+}
+
+function queueRow(job, pos, q) {
+    const isRunning = job.state === 'running';
+    const idx = q.findIndex(j => j.id === job.id);
+    const canUp = !isRunning && idx > (q[0] && q[0].state === 'running' ? 1 : 0);
+    const canDown = !isRunning && idx < q.length - 1;
+    const mins = Math.round(job.duration_sec / 60);
+    const sub = isRunning ? `${fmt(job.remaining_sec)} remaining` : `${mins} min`;
+    return `<div class="queue-item ${isRunning ? 'running' : ''}">
+        <div class="queue-pos">${isRunning ? '▶' : pos}</div>
+        <div class="queue-main">
+            <div class="queue-name">${esc(job.name)}</div>
+            <div class="queue-sub">${sub}</div>
+        </div>
+        <div class="queue-actions">
+            ${!isRunning ? `<button class="q-icon" ${canUp?'':'disabled'} onclick="move('${job.id}',-1)" title="Move up"><span class="material-icons" style="font-size:18px;">arrow_upward</span></button>
+            <button class="q-icon" ${canDown?'':'disabled'} onclick="move('${job.id}',1)" title="Move down"><span class="material-icons" style="font-size:18px;">arrow_downward</span></button>` : ''}
+            <button class="q-icon" onclick="editJob('${job.id}', ${mins})" title="Edit time"><span class="material-icons" style="font-size:18px;">schedule</span></button>
+            <button class="q-icon danger" onclick="removeJob('${job.id}')" title="Remove"><span class="material-icons" style="font-size:18px;">close</span></button>
+        </div>
+    </div>`;
+}
+
+// ── selection ──
+function selectZone(id) { selectedZone = id; syncPickerSelection(); }
+function selectMin(m, custom) {
+    if (!m || m < 1) return;
+    selectedMin = m;
+    if (!custom) document.getElementById('customMin').value = '';
+    syncPickerSelection();
+}
+function syncPickerSelection() {
+    document.querySelectorAll('.zone-pick').forEach(b =>
+        b.classList.toggle('selected', +b.dataset.zone === selectedZone));
+    document.querySelectorAll('.chip[data-min]').forEach(b =>
+        b.classList.toggle('selected', +b.dataset.min === selectedMin));
+    const run = document.getElementById('btnRun'), queue = document.getElementById('btnQueue');
+    const ok = selectedZone != null && selectedMin >= 1;
+    if (run) run.disabled = !ok;
+    if (queue) queue.disabled = !ok;
+}
+
+// ── actions ──
+async function runNow() {
+    if (selectedZone == null) return toast('Pick a zone first', 'error');
+    await api('/api/queue/run-now', { zone_id: selectedZone, duration_min: selectedMin });
+    toast(`Running zone ${selectedZone} for ${selectedMin} min`, 'ok');
+}
+async function addToQueue() {
+    if (selectedZone == null) return toast('Pick a zone first', 'error');
+    await api('/api/queue/add', { zone_id: selectedZone, duration_min: selectedMin });
+    toast(`Queued zone ${selectedZone} for ${selectedMin} min`, 'ok');
+}
+async function adjust(delta) {
+    document.querySelectorAll('.adj-btn').forEach(b => b.disabled = true);
+    await api('/api/queue/adjust', { delta_min: delta });
+}
+async function stopCurrent() { await api('/api/queue/stop', {}); }
+async function removeJob(id) { await api('/api/queue/remove', { id }); }
+async function move(id, dir) {
+    const ids = state.queue.map(j => j.id);
+    const i = ids.indexOf(id);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= ids.length) return;
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+    await api('/api/queue/reorder', { ids });
+}
+async function editJob(id, currentMin) {
+    const v = prompt('New duration in minutes:', currentMin);
+    if (v == null) return;
+    const m = parseInt(v);
+    if (!m || m < 1) return toast('Enter a valid number', 'error');
+    await api('/api/queue/edit', { id, duration_min: m });
+}
+
+async function api(url, body) {
     try {
-        const r = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-        });
-        const data = await r.json();
-        return { ok: true, data };
-    } catch (e) {
-        return { ok: false, data: { error: e.message } };
+        const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const d = await r.json();
+        if (d.success && d.state) applyState(d.state);
+        else if (!d.success) toast(d.error || 'Action failed', 'error');
+        return d;
+    } catch (e) { toast(e.message, 'error'); }
+}
+
+// ── settings ──
+function openSettings() {
+    fetch('/api/state'); // noop warm
+    api2load();
+    document.getElementById('scanResults').style.display = 'none';
+    document.getElementById('settingsOverlay').classList.add('show');
+}
+async function api2load() {
+    const r = await fetch('/api/settings', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'load'}) });
+    const d = await r.json();
+    if (d.success) {
+        document.getElementById('cfgIp').value = d.settings.controller_ip || '';
+        document.getElementById('cfgPwd').value = d.settings.controller_password || '';
     }
 }
-
-function loadJson(key, def) {
-    try { return JSON.parse(localStorage.getItem(key)) ?? def; } catch { return def; }
+function closeSettings() { document.getElementById('settingsOverlay').classList.remove('show'); }
+async function saveSettings() {
+    const ip = document.getElementById('cfgIp').value.trim();
+    const pwd = document.getElementById('cfgPwd').value;
+    const r = await fetch('/api/settings', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ action:'save', settings:{ controller_ip: ip, controller_password: pwd } }) });
+    const d = await r.json();
+    if (d.success) { closeSettings(); toast('Settings saved', 'ok'); poll(); }
+    else toast('Save failed', 'error');
 }
-function saveJson(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
 
-function esc(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+async function scanNetwork() {
+    const btn = document.getElementById('scanBtn'), icon = document.getElementById('scanIcon'), res = document.getElementById('scanResults');
+    btn.disabled = true; icon.style.animation = 'spin 1s linear infinite'; icon.textContent = 'refresh';
+    res.style.display = 'none'; res.innerHTML = '';
+    try {
+        const r = await fetch('/api/scan');
+        const ips = (await r.json()).controllers || [];
+        res.innerHTML = ips.length
+            ? ips.map(ip => `<button class="scan-item" onclick="pickIp('${ip}')"><span class="material-icons">router</span> ${ip}</button>`).join('')
+            : `<button class="scan-item" disabled><span class="material-icons">search_off</span> No devices found</button>`;
+        res.style.display = 'block';
+    } catch (e) { res.innerHTML = `<button class="scan-item" disabled>Scan failed</button>`; res.style.display = 'block'; }
+    finally { btn.disabled = false; icon.style.animation = ''; icon.textContent = 'wifi_find'; }
+}
+function pickIp(ip) { document.getElementById('cfgIp').value = ip; document.getElementById('scanResults').style.display = 'none'; document.getElementById('cfgPwd').focus(); }
+
+// ── config (zone visibility + names) ──
+let cfgZones = [];
+function openConfig() {
+    cfgZones = zones.map(z => ({ ...z }));
+    renderConfig();
+    document.getElementById('configOverlay').classList.add('show');
+}
+function renderConfig() {
+    document.getElementById('configBody').innerHTML = cfgZones.map(z => `
+        <div class="vis-row ${z.visible ? '' : 'off'}" id="vis-${z.id}">
+            <span class="queue-pos">${z.id}</span>
+            <span class="vis-name"><input type="text" value="${esc(z.name)}" onchange="cfgRename(${z.id}, this.value)"></span>
+            <button class="vis-toggle" onclick="cfgToggle(${z.id})" title="Show/hide">
+                <span class="material-icons">${z.visible ? 'visibility' : 'visibility_off'}</span>
+            </button>
+        </div>`).join('');
+}
+function cfgToggle(id) { const z = cfgZones.find(z => z.id === id); z.visible = !z.visible; renderConfig(); }
+function cfgRename(id, name) { const z = cfgZones.find(z => z.id === id); z.name = name.trim() || `Zone ${id}`; }
+function closeConfig() { document.getElementById('configOverlay').classList.remove('show'); }
+async function saveConfig() {
+    const visible_zones = cfgZones.filter(z => z.visible).map(z => z.id);
+    const zone_names = {};
+    cfgZones.forEach(z => { zone_names[z.id] = z.name; });
+    const r = await fetch('/api/settings', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ action:'save', settings:{ visible_zones, zone_names } }) });
+    const d = await r.json();
+    if (d.success) { zones = cfgZones; closeConfig(); render(); toast('Zones updated', 'ok'); }
+    else toast('Save failed', 'error');
 }
 
-function toast(msg, type = '') {
-    const el = document.createElement('div');
-    el.className = 'toast ' + type;
-    el.textContent = msg;
-    document.getElementById('toast-container').appendChild(el);
-    setTimeout(() => {
-        el.style.transition = 'opacity .3s';
-        el.style.opacity = '0';
-        setTimeout(() => el.remove(), 300);
-    }, 3200);
+// ── utils ──
+function fmt(sec) {
+    if (sec == null || sec < 0) sec = 0;
+    const m = Math.floor(sec / 60), s = Math.floor(sec % 60);
+    return `${m}:${String(s).padStart(2, '0')}`;
+}
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function toast(msg, type='') {
+    const el = document.createElement('div'); el.className = 'toast ' + type; el.textContent = msg;
+    document.getElementById('toasts').appendChild(el);
+    setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3000);
 }
 </script>
 </body>

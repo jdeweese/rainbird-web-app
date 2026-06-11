@@ -1,6 +1,7 @@
 # Runtime files
 server.pid
 .active_zone
+config/state.json
 
 # Configuration files with sensitive data
 config/config.json
