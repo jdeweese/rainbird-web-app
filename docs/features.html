@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RainBird Web App — Features</title>
+<style>
+  :root{--brand:#1a73e8;--brand-dark:#1557b0;--ok:#1e8e3e;--ok-bg:#e6f4ea;--warn:#e37400;
+        --text:#202124;--text-2:#5f6368;--border:#dadce0;--bg:#f6f8fa;--surface:#fff;--radius:10px}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Inter,-apple-system,system-ui,sans-serif;color:var(--text);background:var(--bg);line-height:1.6}
+  .wrap{max-width:920px;margin:0 auto;padding:0 24px}
+  header{background:linear-gradient(135deg,#1a73e8,#21cbf3);color:#fff;padding:44px 0}
+  header h1{font-size:30px;font-weight:600;display:flex;align-items:center;gap:12px}
+  header p{opacity:.9;margin-top:6px}
+  header a{color:#fff;font-size:13px;opacity:.85;text-decoration:none}
+  nav{position:sticky;top:0;background:var(--surface);border-bottom:1px solid var(--border);z-index:5}
+  nav .wrap{display:flex;gap:6px;flex-wrap:wrap;padding:10px 24px}
+  nav a{font-size:13px;font-weight:500;color:var(--text-2);text-decoration:none;padding:6px 12px;border-radius:20px}
+  nav a:hover{background:var(--bg);color:var(--brand)}
+  section{padding:32px 0;border-bottom:1px solid var(--border)}
+  h2{font-size:24px;font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:10px}
+  h2 .ico{font-size:26px}
+  p{margin:8px 0;color:#33373b}
+  .feat{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:14px}
+  @media(max-width:720px){.feat{grid-template-columns:1fr}}
+  .f{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+  .f h4{font-size:15px;color:var(--brand-dark);margin-bottom:4px}
+  .f p{font-size:13px;color:var(--text-2);margin:2px 0}
+  .box{background:var(--ok-bg);border-left:4px solid var(--ok);border-radius:var(--radius);padding:14px 16px;margin:16px 0;font-size:14px}
+  .box .t{font-weight:600;color:var(--ok);margin-bottom:3px}
+  ul{margin:8px 0 8px 22px}li{margin:4px 0;font-size:14px}
+  code{font-family:'SF Mono',ui-monospace,Menlo,monospace;font-size:.87em;background:#eef1f4;padding:1px 6px;border-radius:4px;color:#c0341d}
+  .mock{background:#1e1e2e;border-radius:var(--radius);padding:18px;margin:16px 0;font-family:'SF Mono',ui-monospace,monospace;font-size:12px;color:#cdd6f4;line-height:1.7}
+  .mock .lbl{color:#7f849c}
+  .mock .chip{display:inline-block;border:1px solid #45475a;border-radius:12px;padding:1px 9px;margin:1px}
+  .mock .chip.on{background:#1a73e8;border-color:#1a73e8;color:#fff}
+  .mock .btn{display:inline-block;background:#1a73e8;color:#fff;border-radius:6px;padding:4px 12px;margin-top:6px}
+  .mock .run{color:#a6e3a1}
+  footer{padding:26px 0;text-align:center;color:var(--text-2);font-size:13px}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <a href="index.html">← Docs home</a>
+  <h1><span>✨</span> Features</h1>
+  <p>What the app does today, and how each piece behaves.</p>
+</div></header>
+<nav><div class="wrap">
+  <a href="#pick">Pick &amp; Run</a>
+  <a href="#queue">Queue</a>
+  <a href="#shortcuts">Shortcuts</a>
+  <a href="#running">Live Run</a>
+  <a href="#scan">Device Scan</a>
+  <a href="#config">Zone Config</a>
+  <a href="architecture.html">Architecture →</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="pick">
+  <h2><span class="ico">🎛️</span> Pick zones &amp; time</h2>
+  <p>A guided two-step picker: choose one or more zones from a multi-select dropdown, pick a run time,
+  and add them all to the queue in one tap.</p>
+  <div class="mock">
+    <div class="lbl">1 · SELECT ZONES</div>
+    [ Front House, Front Drip, Right Side ▾ ]<br><br>
+    <div class="lbl">2 · SELECT TIME</div>
+    <span class="chip">5m</span><span class="chip on">15m</span><span class="chip">30m</span>
+    <span class="chip">45m</span><span class="chip">60m</span><span class="chip">120m</span>
+    <span class="chip">[__] min</span><br>
+    <span class="btn">＋ Add 3 zones</span>
+  </div>
+  <div class="feat">
+    <div class="f"><h4>Multi-select dropdown</h4><p>Check any number of zones; the trigger summarizes the selection.</p></div>
+    <div class="f"><h4>Preset + custom time</h4><p>Quick chips (5/15/30/45/60/120) or type any minute value.</p></div>
+    <div class="f"><h4>Batch add</h4><p>All selected zones queue at once in one atomic update.</p></div>
+    <div class="f"><h4>Smart button</h4><p>Reads "Run now" on an empty queue, "Add N zones" otherwise.</p></div>
+  </div>
+</section>
+
+<section id="queue">
+  <h2><span class="ico">📋</span> The watering queue</h2>
+  <p>Zones run sequentially, head-first. The queue is fully editable, live, and shared across every
+  open browser.</p>
+  <ul>
+    <li><strong>Reorder</strong> upcoming jobs (↑/↓). Moving a new job to the top re-targets the controller.</li>
+    <li><strong>Edit duration</strong> via an in-page dialog (no browser prompt).</li>
+    <li><strong>Remove</strong> any job; removing the running head advances to the next.</li>
+    <li><strong>Run-now / preempt</strong> inserts at the head and starts immediately.</li>
+  </ul>
+  <div class="box"><div class="t">Server-side queue</div>
+    The ESP-ME3 only knows about one zone at a time — the queue is built entirely on the server, so it
+    survives restarts and stays consistent for all clients. See the
+    <a href="architecture.html#timing">architecture doc</a> for the timing model.</div>
+</section>
+
+<section id="shortcuts">
+  <h2><span class="ico">⚡</span> Zone shortcuts</h2>
+  <p>Flag any zone as a shortcut with a preset time. A panel beside the picker shows one-tap buttons
+  that jump straight to the front of the queue.</p>
+  <div class="mock">
+    <div class="lbl">SHORTCUTS</div>
+    ⚡ Main <span style="float:right;color:#7f849c">15m</span><br>
+    ⚡ Front House <span style="float:right;color:#7f849c">5m</span><br>
+    ⚡ Trampoline <span style="float:right;color:#7f849c">20m</span>
+  </div>
+  <p>Configured in <strong>Edit Zones</strong> — toggle the ⚡ on a zone and set its minutes. Shortcuts
+  persist and follow your custom zone order.</p>
+</section>
+
+<section id="running">
+  <h2><span class="ico">⏱️</span> Live run &amp; adjust</h2>
+  <p>The active zone shows a big live countdown with fine-grained time controls.</p>
+  <div class="mock">
+    <div class="lbl run">WATERING NOW</div>
+    Front House &nbsp;&nbsp; <span style="float:right;font-size:20px" class="run">4:32</span><br><br>
+    <span class="chip">−15</span><span class="chip">−5</span><span class="chip">+5</span><span class="chip">+15</span>
+    <span style="float:right;color:#f38ba8">■ Stop</span>
+  </div>
+  <div class="feat">
+    <div class="f"><h4>Confirmed countdown</h4><p>The timer starts only once the controller accepts the command — it reflects reality, never optimism.</p></div>
+    <div class="f"><h4>±5 / ±15 adjust</h4><p>Extend or shorten the running zone; the worker stops &amp; restarts it at the new time.</p></div>
+    <div class="f"><h4>Status pill</h4><p>Header shows Watering / Connecting / <span style="color:var(--warn)">Retrying in Ns</span> / Offline.</p></div>
+    <div class="f"><h4>Rain sensor</h4><p>Surfaced in the status line when the controller reports it active.</p></div>
+  </div>
+</section>
+
+<section id="scan">
+  <h2><span class="ico">🔎</span> Device scan with confirmation</h2>
+  <p>Finding the controller is hard because its IP moves (DHCP) and its port 80 is intermittent. The
+  scan uses three escalating signals:</p>
+  <ul>
+    <li><strong>TCP sweep</strong> of the local <code>/24</code> to find live hosts.</li>
+    <li><strong>MAC-OUI filter</strong> — only devices with Rain Bird's <code>50:06:F5</code> prefix.</li>
+    <li><strong>Protocol handshake</strong> — a real <code>get_model_and_version()</code> call confirms
+        a controllable device (and reports the model, e.g. ESP-ME3).</li>
+  </ul>
+  <div class="box"><div class="t">Only real devices shown</div>
+    The scan never dumps every device on port 80. It lists confirmed controllers first (with model),
+    then possible Rain Bird devices it couldn't fully confirm — nothing else.</div>
+</section>
+
+<section id="config">
+  <h2><span class="ico">🛠️</span> Zone configuration</h2>
+  <div class="feat">
+    <div class="f"><h4>Rename zones</h4><p>Give every zone a friendly name; persisted server-side.</p></div>
+    <div class="f"><h4>Drag to reorder</h4><p>Drag zones into the order you want them listed everywhere.</p></div>
+    <div class="f"><h4>Show / hide</h4><p>Hide zones you never use so the picker stays tidy.</p></div>
+    <div class="f"><h4>Shortcuts</h4><p>Toggle ⚡ + minutes to publish a quick-run button.</p></div>
+  </div>
+  <p style="margin-top:14px">All settings live in <code>config/config.json</code> (a mounted volume in Docker), so they
+  survive container rebuilds and redeploys.</p>
+</section>
+
+</div>
+<footer>RainBird Web App · features · see the <a href="architecture.html">architecture doc</a> for how it works</footer>
+</body>
+</html>

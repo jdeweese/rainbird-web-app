@@ -1,6 +1,22 @@
 # 🌱 RainBird Web App
 
-Modern web interface and command-line tools for RainBird ESP-ME3 irrigation controllers with advanced session management and diagnostics.
+A responsive, multi-client web interface for the Rain Bird ESP-ME3 — server-authoritative state,
+a server-side watering queue, zone shortcuts, and resilient retry logic built to stay fast and honest
+on top of a flaky single-connection controller.
+
+## 📖 Documentation
+
+The full design is documented as illustrated HTML in [`docs/`](docs/):
+
+- **[docs/index.html](docs/index.html)** — documentation home
+- **[docs/architecture.html](docs/architecture.html)** — architecture & design: the single-connection
+  problem, server-owns-state model, the single worker, exponential-backoff retries, queue timing, and
+  multi-client sync (with diagrams)
+- **[docs/features.html](docs/features.html)** — what the app does today
+
+Open them in a browser, or serve the app and visit `/docs/architecture.html`.
+
+> Note: the sections below are an older reference and may lag the current design — `docs/` is authoritative.
 
 ## ✨ Features
 

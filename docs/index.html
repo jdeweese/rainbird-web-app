@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RainBird Web App — Documentation</title>
+<style>
+  :root{--brand:#1a73e8;--brand-dark:#1557b0;--ok:#1e8e3e;--text:#202124;--text-2:#5f6368;
+        --border:#dadce0;--bg:#f6f8fa;--surface:#fff;--radius:12px}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Inter,-apple-system,system-ui,sans-serif;color:var(--text);background:var(--bg);line-height:1.6}
+  .wrap{max-width:880px;margin:0 auto;padding:0 24px}
+  header{background:linear-gradient(135deg,#1a73e8,#21cbf3);color:#fff;padding:56px 0}
+  header h1{font-size:38px;font-weight:600;display:flex;align-items:center;gap:14px}
+  header p{font-size:18px;opacity:.92;font-weight:300;margin-top:8px;max-width:620px}
+  section{padding:36px 0}
+  h2{font-size:22px;font-weight:600;margin-bottom:16px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+  a.card{display:block;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+         padding:22px;text-decoration:none;color:inherit;transition:.15s}
+  a.card:hover{border-color:var(--brand);box-shadow:0 4px 16px rgba(26,115,232,.12);transform:translateY(-2px)}
+  a.card .ico{font-size:30px;display:block;margin-bottom:10px}
+  a.card h3{font-size:17px;color:var(--brand-dark);margin-bottom:6px}
+  a.card p{font-size:14px;color:var(--text-2)}
+  .quick{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px;margin-top:8px}
+  .quick h3{font-size:15px;margin:14px 0 6px;color:var(--brand-dark)}
+  .quick h3:first-child{margin-top:0}
+  pre{background:#1e1e2e;color:#cdd6f4;border-radius:8px;padding:14px 16px;overflow-x:auto;
+      font-family:'SF Mono',ui-monospace,Menlo,monospace;font-size:13px;line-height:1.55;margin:6px 0}
+  pre .c{color:#7f849c}
+  .pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+  .pill{background:#e8f0fe;color:#1a73e8;font-size:12px;font-weight:600;padding:4px 12px;border-radius:14px}
+  footer{padding:28px 0;text-align:center;color:var(--text-2);font-size:13px}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <h1><span style="font-size:34px">🌱</span> RainBird Web App</h1>
+  <p>A responsive, multi-client web interface for the Rain Bird ESP-ME3 — built to stay fast and
+  honest on top of a notoriously flaky single-connection controller.</p>
+  <div class="pills">
+    <span class="pill">Server-authoritative</span>
+    <span class="pill">Watering queue</span>
+    <span class="pill">Multi-client sync</span>
+    <span class="pill">Backoff retries</span>
+    <span class="pill">Zone shortcuts</span>
+  </div>
+</div></header>
+
+<div class="wrap">
+<section>
+  <h2>Documentation</h2>
+  <div class="cards">
+    <a class="card" href="architecture.html">
+      <span class="ico">🏛️</span>
+      <h3>Architecture &amp; Design</h3>
+      <p>The full illustrated design: why the controller is hard, the server-owns-state model, the
+      single worker, exponential backoff, queue timing, and multi-client sync. Start here.</p>
+    </a>
+    <a class="card" href="features.html">
+      <span class="ico">✨</span>
+      <h3>Features</h3>
+      <p>What the app does today — zone selection, the watering queue, shortcuts, live countdown,
+      device scan with protocol confirmation, and zone configuration.</p>
+    </a>
+  </div>
+</section>
+
+<section>
+  <h2>Quick Start</h2>
+  <div class="quick">
+    <h3>Run locally</h3>
+    <pre>python3 server.py            <span class="c"># serves on http://localhost:8000</span>
+<span class="c"># open the page, then Settings → enter controller IP + password (or Scan)</span></pre>
+    <h3>Deploy (Docker)</h3>
+    <pre>docker compose up -d --build <span class="c"># config persists in ./config (mounted volume)</span></pre>
+    <h3>Find the controller</h3>
+    <pre><span class="c"># Settings → Scan. It TCP-sweeps the /24, filters by Rain Bird MAC (50:06:F5),</span>
+<span class="c"># and confirms each candidate with a real protocol handshake.</span></pre>
+  </div>
+</section>
+</div>
+
+<footer>RainBird Web App · documentation index</footer>
+</body>
+</html>

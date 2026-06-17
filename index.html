@@ -26,13 +26,41 @@
         .conn-dot { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,.35); transition: background .4s; flex-shrink: 0; }
         .conn-dot.ok { background: #34a853; box-shadow: 0 0 0 3px rgba(52,168,83,.25); }
         .conn-dot.err { background: #ea4335; box-shadow: 0 0 0 3px rgba(234,67,53,.25); }
+        .conn-dot.warn { background: #fbbc04; box-shadow: 0 0 0 3px rgba(251,188,4,.25); animation: pulse 1.4s ease-in-out infinite; }
         .topbar-status { font-size: 12px; opacity: .85; }
         .icon-btn { background: rgba(255,255,255,.12); border: none; color: #fff; width: 36px; height: 36px;
                     border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;
                     transition: background .2s; flex-shrink: 0; }
         .icon-btn:hover { background: rgba(255,255,255,.22); }
 
-        .main { max-width: 760px; margin: 0 auto; padding: 16px; }
+        .main { max-width: 860px; margin: 0 auto; padding: 16px; }
+
+        /* Picker + shortcuts side by side */
+        .picker-row { display: flex; gap: 16px; align-items: stretch; }
+        .picker-row > .card { margin-bottom: 16px; }
+        .picker-row > .card:first-child { flex: 1; min-width: 0; }
+        .shortcuts-card { width: 240px; flex-shrink: 0; display: flex; flex-direction: column; }
+        .shortcut-list { display: flex; flex-direction: column; gap: 8px; }
+        .shortcut-btn { display: flex; align-items: center; gap: 8px; padding: 11px 12px; border: 1px solid var(--border);
+                        border-radius: 8px; background: var(--surface); cursor: pointer; font-family: inherit;
+                        font-size: 14px; color: var(--text); text-align: left; transition: all .12s; width: 100%; }
+        .shortcut-btn:hover { border-color: var(--brand); background: #e8f0fe; }
+        .shortcut-btn .material-icons { color: var(--warn); flex-shrink: 0; }
+        .shortcut-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+        .shortcut-min { color: var(--text-2); font-size: 13px; flex-shrink: 0; }
+        @media (max-width: 680px) {
+            .picker-row { flex-direction: column; }
+            .shortcuts-card { width: 100%; }
+        }
+
+        /* Shortcut controls in the Edit Zones dialog */
+        .sc-toggle { background: none; border: none; cursor: pointer; color: var(--border); flex-shrink: 0;
+                     width: 30px; height: 30px; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+        .sc-toggle:hover { background: var(--bg); }
+        .sc-toggle.on { color: var(--warn); }
+        .sc-min { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+        .sc-min input { width: 48px; padding: 4px 6px; font-size: 13px; text-align: center; }
+        .sc-min span { font-size: 12px; color: var(--text-2); }
 
         .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
                 padding: 18px; margin-bottom: 16px; }
@@ -41,6 +69,10 @@
 
         /* Running banner */
         .running { background: var(--ok-bg); border: 1px solid var(--ok-border); border-left: 4px solid var(--ok); }
+        .running.starting { background: #fff8e1; border-color: #ffe082; border-left-color: var(--warn); }
+        .running.starting .card-label, .running.starting .running-zone, .running.starting .running-timer { color: #8a5a00; }
+        .running.starting .running-timer { animation: pulse 1.2s ease-in-out infinite; }
+        @keyframes pulse { 0%,100% { opacity: .4; } 50% { opacity: 1; } }
         .running-top { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
         .running-info { flex: 1; min-width: 0; }
         .running-zone { font-size: 20px; font-weight: 500; color: #0d652d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -56,16 +88,25 @@
                     padding: 8px 18px; font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px; }
         .btn-stop:hover { background: #b52d22; }
 
-        /* Zone picker */
-        .zone-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
-        .zone-pick { border: 1px solid var(--border); background: var(--bg); border-radius: 8px; padding: 10px 8px;
-                     cursor: pointer; text-align: left; transition: all .15s; display: flex; align-items: center; gap: 8px; }
-        .zone-pick:hover { border-color: var(--brand); background: #e8f0fe; }
-        .zone-pick.selected { border-color: var(--brand); background: var(--brand); color: #fff; }
-        .zone-pick .num { width: 24px; height: 24px; border-radius: 50%; background: var(--brand); color: #fff;
-                          font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .zone-pick.selected .num { background: rgba(255,255,255,.25); }
-        .zone-pick .zn { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        /* Zone multi-select dropdown */
+        .ms-dropdown { position: relative; }
+        .ms-trigger { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px;
+                      font-size: 15px; font-family: inherit; color: var(--text); background: var(--surface);
+                      cursor: pointer; outline: none; display: flex; align-items: center; gap: 8px; text-align: left; }
+        .ms-dropdown.open .ms-trigger { border-color: var(--brand); border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+        .ms-summary { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .ms-caret { color: var(--text-2); flex-shrink: 0; }
+        .ms-menu { position: absolute; left: 0; right: 0; top: 100%; z-index: 30; background: var(--surface);
+                   border: 1px solid var(--brand); border-top: none; border-radius: 0 0 8px 8px;
+                   max-height: 320px; overflow-y: auto; box-shadow: 0 8px 24px rgba(0,0,0,.12); }
+        .ms-opt { display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer;
+                  font-size: 14px; color: var(--text); border-bottom: 1px solid var(--border); user-select: none; }
+        .ms-opt:last-child { border-bottom: none; }
+        .ms-opt:hover { background: var(--bg); }
+        .ms-opt.on { background: #e8f0fe; }
+        .ms-check { font-size: 20px; color: var(--text-2); flex-shrink: 0; }
+        .ms-opt.on .ms-check { color: var(--brand); }
+        .ms-opt-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         /* Time chips */
         .chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -158,20 +199,39 @@
         .scan-item:last-child { border-bottom: none; }
         .scan-item:hover { background: var(--bg); }
         .scan-item .material-icons { font-size: 16px; color: var(--ok); }
+        .scan-note { display: flex; align-items: center; gap: 8px; padding: 8px 14px; font-size: 12px;
+                     color: var(--text-2); background: var(--bg); border-bottom: 1px solid var(--border); }
+        .scan-note .material-icons { font-size: 15px; }
+        .scan-note.ok { color: var(--ok); }
+        .scan-item .scan-hint { margin-left: auto; font-size: 11px; color: var(--text-2); }
         .panel-footer { padding: 12px 20px; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border); }
         .btn-cancel { background: none; color: var(--text-2); border: 1px solid var(--border); border-radius: 8px;
                       padding: 8px 18px; font-size: 13px; font-weight: 500; cursor: pointer; }
         .btn-save { background: var(--brand); color: #fff; border: none; border-radius: 8px; padding: 8px 20px;
                     font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px; }
 
-        /* Config-mode zone visibility list */
-        .vis-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--border);
-                   border-radius: 8px; margin-bottom: 6px; }
+        /* Config-mode zone list (drag reorder + visibility + names) */
+        .vis-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--border);
+                   border-radius: 8px; margin-bottom: 6px; background: var(--surface); }
         .vis-row.off { opacity: .5; border-style: dashed; }
-        .vis-name { flex: 1; font-size: 14px; }
-        .vis-name input { font-size: 14px; padding: 4px 8px; }
-        .vis-toggle { background: none; border: none; cursor: pointer; color: var(--text-2); }
+        .vis-row.dragging { opacity: .4; }
+        .vis-row.drag-over { border-color: var(--brand); border-style: dashed; }
+        .vis-handle { cursor: grab; color: var(--text-2); flex-shrink: 0; display: flex; align-items: center;
+                      touch-action: none; }
+        .vis-handle:active { cursor: grabbing; }
+        .vis-handle .material-icons { font-size: 22px; }
+        .vis-name { flex: 1; min-width: 0; }
+        .vis-name input { font-size: 14px; padding: 6px 8px; width: 100%; }
+        .vis-toggle { background: none; border: none; cursor: pointer; color: var(--text-2); flex-shrink: 0;
+                      width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+        .vis-toggle:hover { background: var(--bg); }
         .vis-row:not(.off) .vis-toggle { color: var(--ok); }
+
+        /* Edit-duration mini dialog */
+        .dur-input { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px;
+                     font-size: 18px; text-align: center; font-family: inherit; outline: none; }
+        .dur-input:focus { border-color: var(--brand); }
+        .dur-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 
         @media (max-width: 480px) {
             .running-timer { font-size: 32px; }
@@ -224,6 +284,29 @@
         </div>
     </div>
 
+    <!-- Edit queue duration dialog -->
+    <div class="overlay" id="durOverlay">
+        <div class="panel" style="max-width:340px;">
+            <div class="panel-header">
+                <span class="material-icons">schedule</span>
+                <div class="panel-title" id="durTitle">Edit duration</div>
+                <button class="close-btn" onclick="closeDur()"><span class="material-icons">close</span></button>
+            </div>
+            <div class="panel-body">
+                <div class="field">
+                    <label>Duration (minutes)</label>
+                    <input type="number" class="dur-input" id="durInput" min="1" max="600"
+                           onkeydown="if(event.key==='Enter') saveDur()">
+                    <div class="dur-chips" id="durChips"></div>
+                </div>
+            </div>
+            <div class="panel-footer">
+                <button class="btn-cancel" onclick="closeDur()">Cancel</button>
+                <button class="btn-save" onclick="saveDur()"><span class="material-icons" style="font-size:16px;">check</span> Save</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Config (zone visibility + names) dialog -->
     <div class="overlay" id="configOverlay">
         <div class="panel">
@@ -244,8 +327,10 @@ const TIME_CHIPS = [5, 15, 30, 45, 60, 120];
 const ADJUSTS = [5, 15];
 
 let zones = [];            // [{id,name,visible}]
+let shortcuts = [];        // [{zone_id, minutes}]
 let state = null;          // server state snapshot
-let selectedZone = null;
+let selectedZones = [];
+let msOpen = false;        // multi-select dropdown open state
 let selectedMin = 15;
 let pollVersion = 0;
 let configured = false;
@@ -257,6 +342,24 @@ window.addEventListener('load', async () => {
     await poll(true);       // initial
     longPoll();             // continuous
     tickTimer = setInterval(tick, 1000);  // local countdown
+
+    // All dropdown interaction via one delegated listener (survives re-renders).
+    document.addEventListener('click', (e) => {
+        // Trigger toggles open/closed.
+        if (e.target.closest('#msTrigger')) {
+            setMsOpen(!msOpen);
+            return;
+        }
+        // Clicking an option toggles that zone; menu stays open.
+        const opt = e.target.closest('.ms-opt');
+        if (opt) {
+            e.preventDefault();
+            toggleZone(+opt.dataset.zone);
+            return;
+        }
+        // Any other click outside the dropdown closes it.
+        if (msOpen && !e.target.closest('.ms-dropdown')) setMsOpen(false);
+    });
 });
 
 async function loadZones() {
@@ -264,6 +367,12 @@ async function loadZones() {
         const r = await fetch('/api/zones');
         const d = await r.json();
         if (d.success) zones = d.zones;
+    } catch {}
+    // Shortcuts live in settings (not /api/zones).
+    try {
+        const r = await fetch('/api/settings', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action:'load'}) });
+        const d = await r.json();
+        if (d.success) shortcuts = d.settings.shortcuts || [];
     } catch {}
 }
 
@@ -288,15 +397,42 @@ async function poll(initial) {
     } catch {}
 }
 
+let clockOffset = 0;   // serverTime - clientTime, to render server epochs locally
+
 function applyState(s) {
     state = s;
     pollVersion = s.version;
     configured = s.controller_configured;
-    setConn(s.controller_online ? 'ok' : (configured ? 'err' : ''),
-            !configured ? 'Not configured'
-            : s.controller_online ? (s.rain_sensor ? 'Rain sensor active' : 'Connected')
-            : 'Controller offline');
+    // Track server/client clock skew so countdowns to server epochs are accurate.
+    if (s.server_time) clockOffset = s.server_time - (Date.now() / 1000);
+    updateConn();
     render();
+}
+
+// Compute + apply the connection dot/label from current state. Called on every
+// state change AND every second (so the retry countdown ticks live).
+function updateConn() {
+    const s = state;
+    let cls = '', label = 'Not configured';
+    if (s && configured) {
+        const cs = s.controller_state;
+        if (cs === 'watering')       { cls = 'ok';  label = s.rain_sensor ? 'Watering · rain sensor' : 'Watering'; }
+        else if (cs === 'ready')     { cls = 'ok';  label = s.rain_sensor ? 'Ready · rain sensor' : 'Ready'; }
+        else if (cs === 'connecting'){ cls = 'warn'; label = 'Connecting…'; }
+        else if (cs === 'retrying')  { cls = 'warn'; label = retryLabel(s); }
+        else if (s.controller_online){ cls = 'ok';  label = 'Connected'; }
+        else                         { cls = 'err'; label = 'Controller offline'; }
+    }
+    setConn(cls, label);
+}
+
+function retryLabel(s) {
+    if (!s.next_retry_at) return 'Retrying…';
+    // Use the client clock corrected by the server offset, so this ticks down
+    // smoothly between state updates.
+    const nowServer = (Date.now() / 1000) + clockOffset;
+    const secs = Math.max(0, Math.round(s.next_retry_at - nowServer));
+    return secs > 0 ? `Retrying in ${secs}s` : 'Retrying…';
 }
 
 function setConn(cls, label) {
@@ -304,9 +440,12 @@ function setConn(cls, label) {
     document.getElementById('connLabel').textContent = label;
 }
 
-// Local 1s countdown between server updates (smooth timer)
+// Local 1s tick: advance the running countdown AND refresh the retry label so
+// both count down smoothly between server state pushes.
 function tick() {
-    if (!state || !state.queue.length) return;
+    if (!state) return;
+    if (state.controller_state === 'retrying') updateConn();
+    if (!state.queue.length) return;
     const head = state.queue[0];
     if (head.state === 'running' && head.remaining_sec > 0) {
         head.remaining_sec -= 1;
@@ -329,12 +468,13 @@ function render() {
     }
 
     const q = state ? state.queue : [];
-    const running = q.find(j => j.state === 'running');
+    // The active head is either confirmed running or starting (awaiting controller).
+    const active = q.find(j => j.state === 'running' || j.state === 'starting');
     const visibleZones = zones.filter(z => z.visible);
 
     main.innerHTML =
-        (running ? runningCard(running) : '') +
-        pickerCard(running) +
+        (active ? runningCard(active) : '') +
+        `<div class="picker-row">${pickerCard(active)}${shortcutsCard()}</div>` +
         queueCard(q);
 
     // restore selection highlight
@@ -342,16 +482,17 @@ function render() {
 }
 
 function runningCard(job) {
-    return `<div class="card running">
-        <div class="card-label" style="color:var(--ok);">Watering now</div>
+    const starting = job.state === 'starting';
+    return `<div class="card running ${starting ? 'starting' : ''}">
+        <div class="card-label" style="color:var(--ok);">${starting ? 'Starting…' : 'Watering now'}</div>
         <div class="running-top">
             <div class="running-info"><div class="running-zone">${esc(job.name)}</div></div>
-            <div class="running-timer" id="runTimer">${fmt(job.remaining_sec)}</div>
+            <div class="running-timer" id="runTimer">${starting ? '· · ·' : fmt(job.remaining_sec)}</div>
         </div>
         <div class="running-controls">
             <div class="adj-group">
-                ${ADJUSTS.map(m => `<button class="adj-btn" onclick="adjust(-${m})">−${m}</button>`).join('')}
-                ${ADJUSTS.map(m => `<button class="adj-btn" onclick="adjust(${m})">+${m}</button>`).join('')}
+                ${ADJUSTS.map(m => `<button class="adj-btn" ${starting?'disabled':''} onclick="adjust(-${m})">−${m}</button>`).join('')}
+                ${ADJUSTS.map(m => `<button class="adj-btn" ${starting?'disabled':''} onclick="adjust(${m})">+${m}</button>`).join('')}
             </div>
             <button class="btn-stop" onclick="stopCurrent()"><span class="material-icons" style="font-size:16px;">stop</span> Stop</button>
         </div>
@@ -361,56 +502,105 @@ function runningCard(job) {
 function pickerCard(running) {
     const vz = zones.filter(z => z.visible);
     return `<div class="card">
-        <div class="card-label">1 · Select zone</div>
-        <div class="zone-grid">
-            ${vz.map(z => `<button class="zone-pick" data-zone="${z.id}" onclick="selectZone(${z.id})">
-                <span class="num">${z.id}</span><span class="zn">${esc(z.name)}</span></button>`).join('')}
+        <div class="card-label">1 · Select zones</div>
+        <div class="ms-dropdown ${msOpen ? 'open' : ''}" id="msDropdown">
+            <button class="ms-trigger" id="msTrigger">
+                <span class="ms-summary" id="msSummary">${msSummaryText()}</span>
+                <span class="material-icons ms-caret">${msOpen ? 'expand_less' : 'expand_more'}</span>
+            </button>
+            <div class="ms-menu" id="msMenu" ${msOpen ? '' : 'hidden'}>
+                ${vz.map(z => `<label class="ms-opt ${selectedZones.includes(z.id) ? 'on' : ''}" data-zone="${z.id}">
+                    <span class="material-icons ms-check">${selectedZones.includes(z.id) ? 'check_box' : 'check_box_outline_blank'}</span>
+                    <span class="ms-opt-name">${esc(z.name)}</span>
+                </label>`).join('')}
+            </div>
         </div>
         <div class="card-label" style="margin-top:18px;">2 · Select time</div>
         <div class="chips">
             ${TIME_CHIPS.map(m => `<button class="chip" data-min="${m}" onclick="selectMin(${m})">${m}m</button>`).join('')}
             <div class="chip-custom" onclick="this.querySelector('input').focus()">
-                <input type="number" min="1" max="600" id="customMin" placeholder="custom"
+                <input type="number" min="1" max="600" id="customMin"
                        oninput="selectMin(+this.value||0, true)"><span>min</span>
             </div>
         </div>
         <div class="action-row">
-            <button class="btn btn-run" id="btnRun" onclick="runNow()">
-                <span class="material-icons" style="font-size:18px;">play_arrow</span> Run now</button>
-            <button class="btn btn-queue" id="btnQueue" onclick="addToQueue()">
-                <span class="material-icons" style="font-size:18px;">playlist_add</span> Add to queue</button>
+            <button class="btn btn-run" id="btnGo" onclick="addSelected()">
+                <span class="material-icons" style="font-size:18px;" id="btnGoIcon">playlist_add</span>
+                <span id="btnGoLabel">Add to queue</span></button>
         </div>
     </div>`;
 }
 
+function msSummaryText() {
+    if (!selectedZones.length) return 'Choose zones…';
+    if (selectedZones.length === 1) return zoneName(selectedZones[0]);
+    if (selectedZones.length <= 3) return selectedZones.map(zoneName).join(', ');
+    return `${selectedZones.length} zones selected`;
+}
+
+function shortcutsCard() {
+    if (!shortcuts.length) {
+        return `<div class="card shortcuts-card">
+            <div class="card-label">Shortcuts</div>
+            <div class="empty" style="padding:18px 8px;">
+                <div class="material-icons">bolt</div>
+                <div style="font-size:13px;">Add shortcuts in <a href="#" onclick="openConfig();return false;" style="color:var(--brand);">Edit zones</a></div>
+            </div>
+        </div>`;
+    }
+    return `<div class="card shortcuts-card">
+        <div class="card-label">Shortcuts</div>
+        <div class="shortcut-list">
+            ${shortcuts.map((sc, i) => `<button class="shortcut-btn" onclick="runShortcut(${i})">
+                <span class="material-icons" style="font-size:18px;">bolt</span>
+                <span class="shortcut-name">${esc(zoneName(sc.zone_id))}</span>
+                <span class="shortcut-min">${sc.minutes}m</span>
+            </button>`).join('')}
+        </div>
+    </div>`;
+}
+
+async function runShortcut(i) {
+    const sc = shortcuts[i];
+    if (!sc) return;
+    // Shortcuts jump the line: insert at the head so it runs immediately.
+    await api('/api/queue/run-now', { zone_id: sc.zone_id, duration_min: sc.minutes });
+    toast(`${zoneName(sc.zone_id)} for ${sc.minutes}m`, 'ok');
+}
+
 function queueCard(q) {
-    const upcoming = q.filter(j => j.state !== 'running');
-    const running = q.find(j => j.state === 'running');
+    const isHeadActive = q[0] && (q[0].state === 'running' || q[0].state === 'starting');
+    const head = isHeadActive ? q[0] : null;
+    const upcoming = q.filter(j => j !== head);
     let rows = '';
-    if (running) rows += queueRow(running, 0, q);
+    if (head) rows += queueRow(head, 0, q);
     upcoming.forEach((j, i) => { rows += queueRow(j, i + 1, q); });
 
     return `<div class="card">
         <div class="card-label">Queue</div>
-        ${q.length ? rows : `<div class="empty"><div class="material-icons">queue_music</div>Nothing queued</div>`}
+        ${q.length ? rows : `<div class="empty"><div class="material-icons">water_drop</div>Nothing queued</div>`}
     </div>`;
 }
 
 function queueRow(job, pos, q) {
-    const isRunning = job.state === 'running';
+    const isHead = job.state === 'running' || job.state === 'starting';
+    const starting = job.state === 'starting';
     const idx = q.findIndex(j => j.id === job.id);
-    const canUp = !isRunning && idx > (q[0] && q[0].state === 'running' ? 1 : 0);
-    const canDown = !isRunning && idx < q.length - 1;
+    const headActive = q[0] && (q[0].state === 'running' || q[0].state === 'starting');
+    const canUp = !isHead && idx > (headActive ? 1 : 0);
+    const canDown = !isHead && idx < q.length - 1;
     const mins = Math.round(job.duration_sec / 60);
-    const sub = isRunning ? `${fmt(job.remaining_sec)} remaining` : `${mins} min`;
-    return `<div class="queue-item ${isRunning ? 'running' : ''}">
-        <div class="queue-pos">${isRunning ? '▶' : pos}</div>
+    const sub = starting ? 'Starting…'
+              : isHead ? `${fmt(job.remaining_sec)} remaining`
+              : `${mins} min`;
+    return `<div class="queue-item ${isHead ? 'running' : ''}">
+        <div class="queue-pos">${isHead ? '▶' : pos}</div>
         <div class="queue-main">
             <div class="queue-name">${esc(job.name)}</div>
             <div class="queue-sub">${sub}</div>
         </div>
         <div class="queue-actions">
-            ${!isRunning ? `<button class="q-icon" ${canUp?'':'disabled'} onclick="move('${job.id}',-1)" title="Move up"><span class="material-icons" style="font-size:18px;">arrow_upward</span></button>
+            ${!isHead ? `<button class="q-icon" ${canUp?'':'disabled'} onclick="move('${job.id}',-1)" title="Move up"><span class="material-icons" style="font-size:18px;">arrow_upward</span></button>
             <button class="q-icon" ${canDown?'':'disabled'} onclick="move('${job.id}',1)" title="Move down"><span class="material-icons" style="font-size:18px;">arrow_downward</span></button>` : ''}
             <button class="q-icon" onclick="editJob('${job.id}', ${mins})" title="Edit time"><span class="material-icons" style="font-size:18px;">schedule</span></button>
             <button class="q-icon danger" onclick="removeJob('${job.id}')" title="Remove"><span class="material-icons" style="font-size:18px;">close</span></button>
@@ -419,34 +609,70 @@ function queueRow(job, pos, q) {
 }
 
 // ── selection ──
-function selectZone(id) { selectedZone = id; syncPickerSelection(); }
+function setMsOpen(open) {
+    msOpen = open;
+    const dd = document.getElementById('msDropdown');
+    const menu = document.getElementById('msMenu');
+    if (dd) dd.classList.toggle('open', msOpen);
+    if (menu) menu.hidden = !msOpen;
+    const caret = dd && dd.querySelector('.ms-caret');
+    if (caret) caret.textContent = msOpen ? 'expand_less' : 'expand_more';
+}
+function toggleZone(id) {
+    const i = selectedZones.indexOf(id);
+    if (i >= 0) selectedZones.splice(i, 1);
+    else selectedZones.push(id);
+    syncPickerSelection();
+}
 function selectMin(m, custom) {
     if (!m || m < 1) return;
     selectedMin = m;
-    if (!custom) document.getElementById('customMin').value = '';
+    if (!custom) { const c = document.getElementById('customMin'); if (c) c.value = ''; }
     syncPickerSelection();
 }
 function syncPickerSelection() {
-    document.querySelectorAll('.zone-pick').forEach(b =>
-        b.classList.toggle('selected', +b.dataset.zone === selectedZone));
+    // Update the dropdown's option rows + summary in place (no full re-render,
+    // so the menu stays open while toggling).
+    document.querySelectorAll('.ms-opt').forEach(b => {
+        const on = selectedZones.includes(+b.dataset.zone);
+        b.classList.toggle('on', on);
+        const chk = b.querySelector('.ms-check');
+        if (chk) chk.textContent = on ? 'check_box' : 'check_box_outline_blank';
+    });
+    const summary = document.getElementById('msSummary');
+    if (summary) summary.textContent = msSummaryText();
     document.querySelectorAll('.chip[data-min]').forEach(b =>
         b.classList.toggle('selected', +b.dataset.min === selectedMin));
-    const run = document.getElementById('btnRun'), queue = document.getElementById('btnQueue');
-    const ok = selectedZone != null && selectedMin >= 1;
-    if (run) run.disabled = !ok;
-    if (queue) queue.disabled = !ok;
+    const go = document.getElementById('btnGo');
+    const ok = selectedZones.length > 0 && selectedMin >= 1;
+    if (go) go.disabled = !ok;
+    const label = document.getElementById('btnGoLabel');
+    const icon = document.getElementById('btnGoIcon');
+    if (label && icon) {
+        const empty = !(state && state.queue && state.queue.length);
+        const n = selectedZones.length;
+        if (empty && n <= 1) { label.textContent = 'Run now'; icon.textContent = 'play_arrow'; }
+        else { label.textContent = n > 1 ? `Add ${n} zones` : 'Add to queue'; icon.textContent = 'playlist_add'; }
+    }
 }
 
 // ── actions ──
-async function runNow() {
-    if (selectedZone == null) return toast('Pick a zone first', 'error');
-    await api('/api/queue/run-now', { zone_id: selectedZone, duration_min: selectedMin });
-    toast(`Running zone ${selectedZone} for ${selectedMin} min`, 'ok');
-}
-async function addToQueue() {
-    if (selectedZone == null) return toast('Pick a zone first', 'error');
-    await api('/api/queue/add', { zone_id: selectedZone, duration_min: selectedMin });
-    toast(`Queued zone ${selectedZone} for ${selectedMin} min`, 'ok');
+function zoneName(id) { const z = zones.find(z => z.id === id); return z ? z.name : `Zone ${id}`; }
+
+async function addSelected() {
+    if (!selectedZones.length) return toast('Pick at least one zone', 'error');
+    const queueLen = state && state.queue ? state.queue.length : 0;
+    // Preserve the order zones were tapped in. The controller always runs the
+    // head, so the first added zone starts watering right away if queue was empty.
+    const items = selectedZones.map(id => ({ zone_id: id, duration_min: selectedMin }));
+    await api('/api/queue/add-many', { items });
+    const n = items.length;
+    toast(n === 1
+        ? (queueLen ? `Queued ${zoneName(selectedZones[0])} for ${selectedMin}m`
+                    : `Running ${zoneName(selectedZones[0])} for ${selectedMin}m`)
+        : `Added ${n} zones at ${selectedMin}m each`, 'ok');
+    selectedZones = [];   // clear after adding
+    syncPickerSelection();
 }
 async function adjust(delta) {
     document.querySelectorAll('.adj-btn').forEach(b => b.disabled = true);
@@ -462,11 +688,22 @@ async function move(id, dir) {
     [ids[i], ids[j]] = [ids[j], ids[i]];
     await api('/api/queue/reorder', { ids });
 }
-async function editJob(id, currentMin) {
-    const v = prompt('New duration in minutes:', currentMin);
-    if (v == null) return;
-    const m = parseInt(v);
+let durEditId = null;
+function editJob(id, currentMin) {
+    durEditId = id;
+    const input = document.getElementById('durInput');
+    input.value = currentMin;
+    document.getElementById('durChips').innerHTML = TIME_CHIPS.map(m =>
+        `<button class="chip" onclick="document.getElementById('durInput').value=${m}">${m}m</button>`).join('');
+    document.getElementById('durOverlay').classList.add('show');
+    setTimeout(() => { input.focus(); input.select(); }, 50);
+}
+function closeDur() { document.getElementById('durOverlay').classList.remove('show'); durEditId = null; }
+async function saveDur() {
+    const m = parseInt(document.getElementById('durInput').value);
     if (!m || m < 1) return toast('Enter a valid number', 'error');
+    const id = durEditId;
+    closeDur();
     await api('/api/queue/edit', { id, duration_min: m });
 }
 
@@ -512,28 +749,64 @@ async function scanNetwork() {
     res.style.display = 'none'; res.innerHTML = '';
     try {
         const r = await fetch('/api/scan');
-        const ips = (await r.json()).controllers || [];
-        res.innerHTML = ips.length
-            ? ips.map(ip => `<button class="scan-item" onclick="pickIp('${ip}')"><span class="material-icons">router</span> ${ip}</button>`).join('')
-            : `<button class="scan-item" disabled><span class="material-icons">search_off</span> No devices found</button>`;
+        const d = await r.json();
+        const devices = d.devices || [];
+        // Only surface real RainBird devices: confirmed controllers, or devices
+        // identified as RainBird (MAC match / wrong-password handshake). We never
+        // dump the generic port-80 list.
+        const confirmed = devices.filter(x => x.controllable);
+        const likely = devices.filter(x => !x.controllable && (x.is_controller || x.is_rainbird_mac));
+        let html = '';
+
+        if (!confirmed.length && !likely.length) {
+            html = `<div class="scan-note"><span class="material-icons">search_off</span> No RainBird controller found on this network</div>`;
+        } else {
+            if (confirmed.length) {
+                html += `<div class="scan-note ok"><span class="material-icons">verified</span> Confirmed RainBird controller${confirmed.length>1?'s':''}</div>`;
+                html += confirmed.map(x => `<button class="scan-item" onclick="pickIp('${x.ip}')">
+                    <span class="material-icons">check_circle</span>
+                    <span>${x.ip}${x.model ? ` · ${esc(x.model)}` : ''}</span>
+                    <span class="scan-hint">use</span></button>`).join('');
+            }
+            if (likely.length) {
+                html += `<div class="scan-note"><span class="material-icons">help</span> Possible RainBird ${likely.length>1?'devices':'device'} (couldn't confirm)</div>`;
+                html += likely.map(x => `<button class="scan-item" onclick="pickIp('${x.ip}')">
+                    <span class="material-icons" style="color:var(--warn);">${x.is_controller ? 'lock' : 'memory'}</span> ${x.ip}</button>`).join('');
+            }
+        }
+        res.innerHTML = html;
         res.style.display = 'block';
     } catch (e) { res.innerHTML = `<button class="scan-item" disabled>Scan failed</button>`; res.style.display = 'block'; }
     finally { btn.disabled = false; icon.style.animation = ''; icon.textContent = 'wifi_find'; }
 }
 function pickIp(ip) { document.getElementById('cfgIp').value = ip; document.getElementById('scanResults').style.display = 'none'; document.getElementById('cfgPwd').focus(); }
 
-// ── config (zone visibility + names) ──
+// ── config (zone visibility + names + shortcuts) ──
 let cfgZones = [];
 function openConfig() {
-    cfgZones = zones.map(z => ({ ...z }));
+    // Seed each zone with its current shortcut minutes (0 = no shortcut).
+    const scMap = {};
+    shortcuts.forEach(sc => { scMap[sc.zone_id] = sc.minutes; });
+    cfgZones = zones.map(z => ({ ...z, shortcut: scMap[z.id] || 0 }));
     renderConfig();
     document.getElementById('configOverlay').classList.add('show');
 }
 function renderConfig() {
-    document.getElementById('configBody').innerHTML = cfgZones.map(z => `
-        <div class="vis-row ${z.visible ? '' : 'off'}" id="vis-${z.id}">
-            <span class="queue-pos">${z.id}</span>
+    document.getElementById('configBody').innerHTML = cfgZones.map((z) => `
+        <div class="vis-row ${z.visible ? '' : 'off'}" id="vis-${z.id}" data-zone="${z.id}" draggable="true"
+             ondragstart="cfgDragStart(event, ${z.id})" ondragend="cfgDragEnd(event)"
+             ondragover="cfgDragOver(event, ${z.id})" ondrop="cfgDrop(event, ${z.id})"
+             ondragleave="cfgDragLeave(event, ${z.id})">
+            <span class="vis-handle" title="Drag to reorder"><span class="material-icons">drag_indicator</span></span>
             <span class="vis-name"><input type="text" value="${esc(z.name)}" onchange="cfgRename(${z.id}, this.value)"></span>
+            <button class="sc-toggle ${z.shortcut ? 'on' : ''}" onclick="cfgToggleShortcut(${z.id})"
+                    title="${z.shortcut ? 'Remove shortcut' : 'Add as shortcut'}">
+                <span class="material-icons">bolt</span>
+            </button>
+            <span class="sc-min" ${z.shortcut ? '' : 'style="visibility:hidden;"'}>
+                <input type="number" min="1" max="600" value="${z.shortcut || 15}"
+                       onchange="cfgShortcutMin(${z.id}, this.value)"><span>m</span>
+            </span>
             <button class="vis-toggle" onclick="cfgToggle(${z.id})" title="Show/hide">
                 <span class="material-icons">${z.visible ? 'visibility' : 'visibility_off'}</span>
             </button>
@@ -541,16 +814,53 @@ function renderConfig() {
 }
 function cfgToggle(id) { const z = cfgZones.find(z => z.id === id); z.visible = !z.visible; renderConfig(); }
 function cfgRename(id, name) { const z = cfgZones.find(z => z.id === id); z.name = name.trim() || `Zone ${id}`; }
+function cfgToggleShortcut(id) {
+    const z = cfgZones.find(z => z.id === id);
+    z.shortcut = z.shortcut ? 0 : 15;   // default 15 min when enabling
+    renderConfig();
+}
+function cfgShortcutMin(id, val) {
+    const z = cfgZones.find(z => z.id === id);
+    const m = Math.max(1, Math.min(600, parseInt(val) || 15));
+    z.shortcut = m;
+}
+
+// Drag-to-reorder. We track only the dragged id; the actual array move happens
+// on drop, then we re-render. Inputs keep focus via onchange (fires on blur).
+let dragId = null;
+function cfgDragStart(e, id) { dragId = id; e.currentTarget.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; }
+function cfgDragEnd(e) { dragId = null; document.querySelectorAll('.vis-row').forEach(r => r.classList.remove('dragging','drag-over')); }
+function cfgDragOver(e, id) { e.preventDefault(); if (id !== dragId) e.currentTarget.classList.add('drag-over'); }
+function cfgDragLeave(e, id) { e.currentTarget.classList.remove('drag-over'); }
+function cfgDrop(e, targetId) {
+    e.preventDefault();
+    if (dragId == null || dragId === targetId) return;
+    const from = cfgZones.findIndex(z => z.id === dragId);
+    const to = cfgZones.findIndex(z => z.id === targetId);
+    if (from < 0 || to < 0) return;
+    const [moved] = cfgZones.splice(from, 1);
+    cfgZones.splice(to, 0, moved);
+    renderConfig();
+}
 function closeConfig() { document.getElementById('configOverlay').classList.remove('show'); }
 async function saveConfig() {
     const visible_zones = cfgZones.filter(z => z.visible).map(z => z.id);
+    const zone_order = cfgZones.map(z => z.id);
     const zone_names = {};
     cfgZones.forEach(z => { zone_names[z.id] = z.name; });
+    // Shortcuts in display order, only zones flagged with a minutes value.
+    const newShortcuts = cfgZones.filter(z => z.shortcut > 0)
+                                 .map(z => ({ zone_id: z.id, minutes: z.shortcut }));
     const r = await fetch('/api/settings', { method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ action:'save', settings:{ visible_zones, zone_names } }) });
+        body: JSON.stringify({ action:'save', settings:{ visible_zones, zone_order, zone_names, shortcuts: newShortcuts } }) });
     const d = await r.json();
-    if (d.success) { zones = cfgZones; closeConfig(); render(); toast('Zones updated', 'ok'); }
-    else toast('Save failed', 'error');
+    if (d.success) {
+        zones = cfgZones.map(({shortcut, ...z}) => z);  // strip the editing-only field
+        shortcuts = newShortcuts;
+        closeConfig();
+        render();
+        toast('Zones updated', 'ok');
+    } else toast('Save failed', 'error');
 }
 
 // ── utils ──

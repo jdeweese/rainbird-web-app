@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RainBird Web App — Architecture &amp; Design</title>
+<style>
+  :root{
+    --brand:#1a73e8; --brand-dark:#1557b0; --ok:#1e8e3e; --ok-bg:#e6f4ea;
+    --warn:#e37400; --warn-bg:#fff8e1; --danger:#d93025; --danger-bg:#fce8e6;
+    --text:#202124; --text-2:#5f6368; --border:#dadce0; --bg:#f6f8fa; --surface:#fff;
+    --code-bg:#1e1e2e; --code-fg:#cdd6f4; --radius:10px;
+    --mono:'SF Mono',ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Inter,-apple-system,system-ui,sans-serif;color:var(--text);background:var(--bg);line-height:1.6}
+  .wrap{max-width:1000px;margin:0 auto;padding:0 24px}
+
+  header{background:linear-gradient(135deg,#1a73e8,#21cbf3);color:#fff;padding:48px 0 40px}
+  header .wrap{display:flex;flex-direction:column;gap:8px}
+  header h1{font-size:34px;font-weight:600;display:flex;align-items:center;gap:12px}
+  header .sub{font-size:17px;opacity:.92;font-weight:300}
+  header .meta{margin-top:10px;font-size:13px;opacity:.8}
+
+  nav{position:sticky;top:0;z-index:10;background:var(--surface);border-bottom:1px solid var(--border);
+      box-shadow:0 1px 4px rgba(0,0,0,.05)}
+  nav .wrap{display:flex;gap:6px;flex-wrap:wrap;padding-top:10px;padding-bottom:10px}
+  nav a{font-size:13px;font-weight:500;color:var(--text-2);text-decoration:none;padding:6px 12px;border-radius:20px;transition:.15s}
+  nav a:hover{background:var(--bg);color:var(--brand)}
+
+  section{padding:36px 0;border-bottom:1px solid var(--border)}
+  section:last-child{border-bottom:none}
+  h2{font-size:26px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+  h2 .n{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;
+        background:var(--brand);color:#fff;font-size:16px;flex-shrink:0}
+  h3{font-size:18px;font-weight:600;margin:24px 0 10px;color:var(--brand-dark)}
+  p{margin:10px 0;color:#33373b}
+  ul,ol{margin:10px 0 10px 24px}
+  li{margin:5px 0}
+  code{font-family:var(--mono);font-size:.88em;background:#eef1f4;padding:1px 6px;border-radius:4px;color:#c0341d}
+  strong{font-weight:600}
+  a{color:var(--brand)}
+
+  .lead{font-size:18px;color:var(--text-2)}
+
+  /* callout boxes */
+  .box{border-radius:var(--radius);padding:16px 18px;margin:18px 0;border-left:4px solid;font-size:15px}
+  .box .t{font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+  .box.problem{background:var(--danger-bg);border-color:var(--danger)}
+  .box.problem .t{color:var(--danger)}
+  .box.insight{background:var(--ok-bg);border-color:var(--ok)}
+  .box.insight .t{color:var(--ok)}
+  .box.note{background:var(--warn-bg);border-color:var(--warn)}
+  .box.note .t{color:var(--warn)}
+
+  /* code blocks */
+  pre{background:var(--code-bg);color:var(--code-fg);border-radius:var(--radius);padding:16px 18px;overflow-x:auto;
+      font-family:var(--mono);font-size:13px;line-height:1.55;margin:14px 0}
+  pre .c{color:#7f849c}      /* comment */
+  pre .k{color:#cba6f7}      /* keyword */
+  pre .s{color:#a6e3a1}      /* string */
+  pre .f{color:#89b4fa}      /* function/name */
+
+  /* diagrams */
+  .diagram{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin:18px 0;
+           overflow-x:auto}
+  .diagram svg{display:block;margin:0 auto;max-width:100%;height:auto}
+  .cap{text-align:center;font-size:13px;color:var(--text-2);margin-top:10px;font-style:italic}
+
+  /* tables */
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;background:var(--surface);
+        border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+  th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{background:var(--bg);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-2)}
+  tr:last-child td{border-bottom:none}
+  td code{white-space:nowrap}
+
+  /* pills */
+  .pill{display:inline-block;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600}
+  .pill.idle{background:#e8eaed;color:#5f6368}
+  .pill.connecting{background:#e8f0fe;color:#1a73e8}
+  .pill.watering{background:var(--ok-bg);color:var(--ok)}
+  .pill.retrying{background:var(--warn-bg);color:var(--warn)}
+  .pill.offline{background:var(--danger-bg);color:var(--danger)}
+
+  footer{padding:28px 0;text-align:center;color:var(--text-2);font-size:13px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:720px){.two{grid-template-columns:1fr}}
+  .grid-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:16px 0}
+  .gc{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+  .gc h4{font-size:15px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+  .gc p{font-size:13px;color:var(--text-2);margin:4px 0 0}
+  .ico{font-size:20px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1><span class="ico" style="font-size:32px">🌱</span> RainBird Web App</h1>
+    <div class="sub">Server-authoritative irrigation control for the ESP-ME3 — architecture &amp; design</div>
+    <div class="meta">Living design document · controls a single ESP-ME3 over a flaky LAN connection</div>
+  </div>
+</header>
+
+<nav><div class="wrap">
+  <a href="#overview">Overview</a>
+  <a href="#problem">The Problem</a>
+  <a href="#principles">Principles</a>
+  <a href="#components">Components</a>
+  <a href="#state">State Model</a>
+  <a href="#worker">The Worker</a>
+  <a href="#backoff">Retry &amp; Backoff</a>
+  <a href="#timing">Timing</a>
+  <a href="#sync">Multi-Client Sync</a>
+  <a href="#api">API</a>
+  <a href="#failure">Failure Modes</a>
+</div></nav>
+
+<div class="wrap">
+
+<!-- ───────────────────────── OVERVIEW ───────────────────────── -->
+<section id="overview">
+  <h2><span class="n">①</span> Overview</h2>
+  <p class="lead">A small web app that lets multiple browsers control a single Rain Bird ESP-ME3
+  sprinkler controller — selecting zones, setting run times, building a watering queue, and
+  saving one-tap shortcuts — over a network connection that is genuinely unreliable.</p>
+
+  <p>The whole design exists to answer one hard question: <em>how do you build a responsive,
+  multi-client web UI on top of a device that can only hold one connection at a time, frequently
+  refuses connections, and can't be reliably read from?</em></p>
+
+  <div class="diagram">
+    <svg viewBox="0 0 760 230" xmlns="http://www.w3.org/2000/svg" font-family="Inter,sans-serif" font-size="13">
+      <!-- clients -->
+      <rect x="20" y="20" width="120" height="46" rx="8" fill="#e8f0fe" stroke="#1a73e8"/>
+      <text x="80" y="40" text-anchor="middle" fill="#1a73e8" font-weight="600">Browser A</text>
+      <text x="80" y="56" text-anchor="middle" fill="#5f6368" font-size="11">phone</text>
+      <rect x="20" y="90" width="120" height="46" rx="8" fill="#e8f0fe" stroke="#1a73e8"/>
+      <text x="80" y="110" text-anchor="middle" fill="#1a73e8" font-weight="600">Browser B</text>
+      <text x="80" y="126" text-anchor="middle" fill="#5f6368" font-size="11">laptop</text>
+      <rect x="20" y="160" width="120" height="46" rx="8" fill="#e8f0fe" stroke="#1a73e8"/>
+      <text x="80" y="180" text-anchor="middle" fill="#1a73e8" font-weight="600">Browser C</text>
+      <text x="80" y="196" text-anchor="middle" fill="#5f6368" font-size="11">tablet</text>
+
+      <!-- server -->
+      <rect x="270" y="55" width="200" height="120" rx="10" fill="#fff" stroke="#34a853" stroke-width="2"/>
+      <text x="370" y="80" text-anchor="middle" font-weight="700" fill="#1e8e3e">Server</text>
+      <rect x="290" y="92" width="160" height="34" rx="6" fill="#e6f4ea"/>
+      <text x="370" y="113" text-anchor="middle" fill="#1e8e3e" font-size="12" font-weight="600">Authoritative State</text>
+      <rect x="290" y="132" width="160" height="32" rx="6" fill="#fff8e1"/>
+      <text x="370" y="152" text-anchor="middle" fill="#e37400" font-size="12" font-weight="600">Single Worker 🧵</text>
+
+      <!-- controller -->
+      <rect x="600" y="85" width="140" height="60" rx="8" fill="#f6f8fa" stroke="#5f6368"/>
+      <text x="670" y="110" text-anchor="middle" font-weight="600">ESP-ME3</text>
+      <text x="670" y="128" text-anchor="middle" fill="#5f6368" font-size="11">⚠ one conn · flaky</text>
+
+      <!-- arrows clients<->server : HTTP long-poll -->
+      <line x1="140" y1="43" x2="270" y2="90" stroke="#1a73e8" stroke-width="1.5" marker-end="url(#a)"/>
+      <line x1="140" y1="113" x2="270" y2="113" stroke="#1a73e8" stroke-width="1.5" marker-end="url(#a)"/>
+      <line x1="140" y1="183" x2="270" y2="140" stroke="#1a73e8" stroke-width="1.5" marker-end="url(#a)"/>
+      <text x="205" y="100" text-anchor="middle" fill="#1a73e8" font-size="10">HTTP + long-poll</text>
+
+      <!-- arrow server->controller : single connection -->
+      <line x1="470" y1="115" x2="600" y2="115" stroke="#e37400" stroke-width="2.5" marker-end="url(#b)"/>
+      <text x="535" y="107" text-anchor="middle" fill="#e37400" font-size="10" font-weight="600">1 connection</text>
+      <text x="535" y="132" text-anchor="middle" fill="#5f6368" font-size="10">write-mostly</text>
+
+      <defs>
+        <marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 Z" fill="#1a73e8"/></marker>
+        <marker id="b" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 Z" fill="#e37400"/></marker>
+      </defs>
+    </svg>
+    <div class="cap">Many browsers talk freely to the server. Exactly one worker thread talks to the controller.</div>
+  </div>
+</section>
+
+<!-- ───────────────────────── PROBLEM ───────────────────────── -->
+<section id="problem">
+  <h2><span class="n">②</span> The Problem: a Hostile Device</h2>
+  <p>The ESP-ME3's LAN interface (<code>pyrainbird</code> over an encrypted HTTP-on-port-80 protocol)
+  has a set of properties that break the obvious "just call the device when a button is pressed" approach:</p>
+
+  <table>
+    <tr><th>Property</th><th>Consequence for naïve designs</th></tr>
+    <tr><td><strong>One connection at a time</strong></td>
+        <td>Two browsers (or a request + a background poll) hitting the device concurrently → the device resets one. Per-request connections collide constantly.</td></tr>
+    <tr><td><strong>Intermittent port 80</strong></td>
+        <td>The device goes unresponsive between internal cycles. A command issued "right now" frequently times out even though the device is fine seconds later.</td></tr>
+    <tr><td><strong>Unreliable reads</strong></td>
+        <td><code>get_current_irrigation()</code> / <code>get_rain_sensor_state()</code> often time out. You cannot trust the device to tell you what it's doing.</td></tr>
+    <tr><td><strong>Whole-minute, single-zone</strong></td>
+        <td>No "add 30 seconds", no concurrent zones, no stored programs over the local API. Anything richer must be built on top.</td></tr>
+  </table>
+
+  <div class="box problem">
+    <div class="t">⛔ The trap we escaped</div>
+    The original design opened a fresh connection per HTTP request and read state back from the
+    controller. Result: stop/adjust commands hung for the device's full timeout, the connection
+    status flapped every few seconds, and a wrong/offline IP froze the whole UI at <code>0:00</code>.
+  </div>
+
+  <div class="box insight">
+    <div class="t">💡 The reframe</div>
+    Treat the controller as a <strong>write-mostly actuator</strong>, not a database. The
+    <strong>server</strong> remembers what should be happening; a <strong>single worker</strong>
+    nudges the device toward that goal and retries patiently when the device isn't listening.
+  </div>
+</section>
+
+<!-- ───────────────────────── PRINCIPLES ───────────────────────── -->
+<section id="principles">
+  <h2><span class="n">③</span> Design Principles</h2>
+  <div class="grid-cards">
+    <div class="gc"><h4><span class="ico">🗄️</span> Server owns truth</h4>
+      <p>The watering queue lives on the server. The device is never the source of truth — we don't read state back from it.</p></div>
+    <div class="gc"><h4><span class="ico">🧵</span> One writer</h4>
+      <p>A single background worker owns the one allowed connection. No other code path ever calls the controller.</p></div>
+    <div class="gc"><h4><span class="ico">🎯</span> Level-triggered</h4>
+      <p>The worker compares <em>desired</em> vs <em>applied</em> and computes the next command. It's not event-driven, so a missed event can't desync it.</p></div>
+    <div class="gc"><h4><span class="ico">⏳</span> Patient retries</h4>
+      <p>Failures schedule an exponentially-backed-off retry with jitter, capped at 30s. Never hammer a busy device.</p></div>
+    <div class="gc"><h4><span class="ico">⏱️</span> Honest timers</h4>
+      <p>A zone's countdown starts only after its start command is <em>confirmed</em>. The timer reflects reality.</p></div>
+    <div class="gc"><h4><span class="ico">🔄</span> Everyone in sync</h4>
+      <p>Every change bumps a version and wakes long-pollers, so all browsers converge within ~1 second.</p></div>
+  </div>
+</section>
+
+<!-- ───────────────────────── COMPONENTS ───────────────────────── -->
+<section id="components">
+  <h2><span class="n">④</span> Components</h2>
+  <div class="diagram">
+    <svg viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg" font-family="Inter,sans-serif" font-size="12">
+      <!-- HTTP handlers -->
+      <rect x="20" y="30" width="180" height="240" rx="10" fill="#e8f0fe" stroke="#1a73e8"/>
+      <text x="110" y="55" text-anchor="middle" font-weight="700" fill="#1a73e8">HTTP Handlers</text>
+      <text x="110" y="73" text-anchor="middle" font-size="10" fill="#5f6368">(ThreadingHTTPServer)</text>
+      <rect x="36" y="88" width="148" height="26" rx="5" fill="#fff" stroke="#c3d7fa"/><text x="110" y="105" text-anchor="middle" font-size="11">POST /api/queue/*</text>
+      <rect x="36" y="120" width="148" height="26" rx="5" fill="#fff" stroke="#c3d7fa"/><text x="110" y="137" text-anchor="middle" font-size="11">GET /api/state (poll)</text>
+      <rect x="36" y="152" width="148" height="26" rx="5" fill="#fff" stroke="#c3d7fa"/><text x="110" y="169" text-anchor="middle" font-size="11">POST /api/settings</text>
+      <rect x="36" y="184" width="148" height="26" rx="5" fill="#fff" stroke="#c3d7fa"/><text x="110" y="201" text-anchor="middle" font-size="11">GET /api/scan</text>
+      <text x="110" y="240" text-anchor="middle" font-size="10" fill="#5f6368" font-style="italic">mutate state · never</text>
+      <text x="110" y="254" text-anchor="middle" font-size="10" fill="#5f6368" font-style="italic">touch the controller</text>
+
+      <!-- Manager state -->
+      <rect x="270" y="30" width="180" height="240" rx="10" fill="#e6f4ea" stroke="#1e8e3e"/>
+      <text x="360" y="55" text-anchor="middle" font-weight="700" fill="#1e8e3e">IrrigationManager</text>
+      <text x="360" y="73" text-anchor="middle" font-size="10" fill="#5f6368">shared state · the lock</text>
+      <rect x="286" y="88" width="148" height="40" rx="5" fill="#fff" stroke="#a8d5b5"/>
+      <text x="360" y="104" text-anchor="middle" font-size="11" font-weight="600">queue[]</text>
+      <text x="360" y="119" text-anchor="middle" font-size="10" fill="#5f6368">desired watering jobs</text>
+      <rect x="286" y="134" width="148" height="38" rx="5" fill="#fff" stroke="#a8d5b5"/>
+      <text x="360" y="150" text-anchor="middle" font-size="11" font-weight="600">applied</text>
+      <text x="360" y="165" text-anchor="middle" font-size="10" fill="#5f6368">confirmed on device</text>
+      <rect x="286" y="178" width="148" height="38" rx="5" fill="#fff" stroke="#a8d5b5"/>
+      <text x="360" y="194" text-anchor="middle" font-size="11" font-weight="600">version ↑</text>
+      <text x="360" y="209" text-anchor="middle" font-size="10" fill="#5f6368">bumped on every change</text>
+      <rect x="286" y="222" width="148" height="34" rx="5" fill="#fff" stroke="#a8d5b5"/>
+      <text x="360" y="243" text-anchor="middle" font-size="11">backoff · controller_state</text>
+
+      <!-- Worker -->
+      <rect x="520" y="30" width="180" height="240" rx="10" fill="#fff8e1" stroke="#e37400"/>
+      <text x="610" y="55" text-anchor="middle" font-weight="700" fill="#e37400">Worker 🧵</text>
+      <text x="610" y="73" text-anchor="middle" font-size="10" fill="#5f6368">1 thread · 1 event loop</text>
+      <rect x="536" y="88" width="148" height="26" rx="5" fill="#fff" stroke="#f5d99a"/><text x="610" y="105" text-anchor="middle" font-size="11">expire finished head</text>
+      <rect x="536" y="120" width="148" height="26" rx="5" fill="#fff" stroke="#f5d99a"/><text x="610" y="137" text-anchor="middle" font-size="11">ensure session</text>
+      <rect x="536" y="152" width="148" height="26" rx="5" fill="#fff" stroke="#f5d99a"/><text x="610" y="169" text-anchor="middle" font-size="11">reconcile (1 command)</text>
+      <rect x="536" y="184" width="148" height="26" rx="5" fill="#fff" stroke="#f5d99a"/><text x="610" y="201" text-anchor="middle" font-size="11">handle success / retry</text>
+      <text x="610" y="240" text-anchor="middle" font-size="10" fill="#5f6368" font-style="italic">sole owner of the</text>
+      <text x="610" y="254" text-anchor="middle" font-size="10" fill="#5f6368" font-style="italic">pyrainbird connection</text>
+
+      <!-- arrows -->
+      <line x1="200" y1="150" x2="270" y2="150" stroke="#5f6368" stroke-width="1.5" marker-end="url(#c)"/>
+      <text x="235" y="143" text-anchor="middle" font-size="9" fill="#5f6368">write</text>
+      <line x1="450" y1="150" x2="520" y2="150" stroke="#5f6368" stroke-width="1.5" marker-end="url(#c)"/>
+      <text x="485" y="143" text-anchor="middle" font-size="9" fill="#5f6368">read</text>
+      <defs><marker id="c" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#5f6368"/></marker></defs>
+    </svg>
+    <div class="cap">Handlers mutate state under the lock; the worker reads state and drives the device. The lock is the only shared-memory contract.</div>
+  </div>
+</section>
+
+<!-- ───────────────────────── STATE MODEL ───────────────────────── -->
+<section id="state">
+  <h2><span class="n">⑤</span> State Model</h2>
+  <p>The heart of the system is two pieces of state and the relationship between them:</p>
+  <div class="two">
+    <div>
+      <h3>Desired — <code>queue[]</code></h3>
+      <p>An ordered list of jobs. <strong>The head is what should be watering.</strong> Clients freely
+      add, remove, reorder, and edit jobs. Each job:</p>
+      <pre><span class="f">{</span>
+  <span class="s">"id"</span>: <span class="s">"a1b2c3d4"</span>,      <span class="c">// stable handle</span>
+  <span class="s">"zone_id"</span>: <span class="k">2</span>,
+  <span class="s">"duration_sec"</span>: <span class="k">900</span>,
+  <span class="s">"ends_at"</span>: <span class="k">null</span>        <span class="c">// set ONLY when confirmed running</span>
+<span class="f">}</span></pre>
+    </div>
+    <div>
+      <h3>Applied — <code>applied</code></h3>
+      <p>What the worker has <strong>confirmed</strong> the controller is doing:</p>
+      <ul>
+        <li><code>None</code> → device is stopped (or we believe so)</li>
+        <li><code>(job_id, zone)</code> → device was told to water this job</li>
+      </ul>
+      <p>The worker's entire job is to make <code>applied</code> match the head of <code>queue</code>.
+      When they differ, it issues exactly one command.</p>
+    </div>
+  </div>
+
+  <h3>Head job lifecycle</h3>
+  <div class="diagram">
+    <svg viewBox="0 0 720 120" xmlns="http://www.w3.org/2000/svg" font-family="Inter,sans-serif" font-size="12">
+      <rect x="20" y="40" width="140" height="44" rx="8" fill="#e8eaed" stroke="#5f6368"/>
+      <text x="90" y="60" text-anchor="middle" font-weight="600">pending</text>
+      <text x="90" y="75" text-anchor="middle" font-size="10" fill="#5f6368">not the head</text>
+
+      <rect x="230" y="40" width="140" height="44" rx="8" fill="#fff8e1" stroke="#e37400"/>
+      <text x="300" y="60" text-anchor="middle" font-weight="600" fill="#e37400">starting</text>
+      <text x="300" y="75" text-anchor="middle" font-size="10" fill="#5f6368">head · awaiting device</text>
+
+      <rect x="440" y="40" width="140" height="44" rx="8" fill="#e6f4ea" stroke="#1e8e3e"/>
+      <text x="510" y="60" text-anchor="middle" font-weight="600" fill="#1e8e3e">running</text>
+      <text x="510" y="75" text-anchor="middle" font-size="10" fill="#5f6368">confirmed · counting down</text>
+
+      <rect x="640" y="40" width="60" height="44" rx="8" fill="#fff" stroke="#dadce0" stroke-dasharray="4"/>
+      <text x="670" y="65" text-anchor="middle" font-size="11" fill="#5f6368">done</text>
+
+      <line x1="160" y1="62" x2="230" y2="62" stroke="#5f6368" stroke-width="1.5" marker-end="url(#d)"/>
+      <text x="195" y="55" text-anchor="middle" font-size="9" fill="#5f6368">reaches head</text>
+      <line x1="370" y1="62" x2="440" y2="62" stroke="#1e8e3e" stroke-width="1.5" marker-end="url(#d)"/>
+      <text x="405" y="55" text-anchor="middle" font-size="9" fill="#1e8e3e">cmd confirmed</text>
+      <line x1="580" y1="62" x2="640" y2="62" stroke="#5f6368" stroke-width="1.5" marker-end="url(#d)"/>
+      <text x="610" y="55" text-anchor="middle" font-size="9" fill="#5f6368">timer 0</text>
+
+      <path d="M300,84 Q300,108 200,108 Q150,108 150,90" fill="none" stroke="#e37400" stroke-width="1.3" stroke-dasharray="4" marker-end="url(#e)"/>
+      <text x="225" y="120" text-anchor="middle" font-size="9" fill="#e37400">retry on failure (backoff)</text>
+      <defs>
+        <marker id="d" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#5f6368"/></marker>
+        <marker id="e" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#e37400"/></marker>
+      </defs>
+    </svg>
+    <div class="cap">A head sits in <span class="pill retrying">starting</span> — with no countdown — until the device confirms the command. Only then does it become <span class="pill watering">running</span>.</div>
+  </div>
+</section>
+
+<!-- ───────────────────────── WORKER ───────────────────────── -->
+<section id="worker">
+  <h2><span class="n">⑥</span> The Worker Loop</h2>
+  <p>One thread, one asyncio event loop, one connection. Every tick it runs the same level-triggered logic:</p>
+  <pre><span class="k">while</span> <span class="k">True</span>:
+    expire_finished_head()        <span class="c"># 1. countdown hit 0? pop &amp; advance</span>
+    ensure_session()              <span class="c"># 2. (re)connect if IP/pw changed</span>
+
+    <span class="k">if</span> now &lt; next_attempt:          <span class="c"># 3. in backoff cooldown?</span>
+        sleep_until_work(...)     <span class="c">#    wait it out (wake early on edits)</span>
+        <span class="k">continue</span>
+
+    reconcile_once()              <span class="c"># 4. ONE command toward the goal</span>
+
+    <span class="k">if</span> idle <span class="k">and</span> due:               <span class="c"># 5. best-effort rain-sensor read</span>
+        poll_rain_sensor()
+
+    sleep_until_work(<span class="k">1.0</span>)         <span class="c"># wake instantly on any change</span></pre>
+
+  <h3><code>reconcile_once()</code> — the decision table</h3>
+  <table>
+    <tr><th>Head of queue</th><th><code>applied</code></th><th>Action</th></tr>
+    <tr><td>— (empty)</td><td><code>None</code></td><td>Nothing. Controller idle. <span class="pill idle">idle</span></td></tr>
+    <tr><td>— (empty)</td><td><code>(j,z)</code></td><td><code>stop_irrigation()</code> → <code>applied=None</code></td></tr>
+    <tr><td>job J / zone Z</td><td><code>(J,Z)</code></td><td>Already correct. Nothing. <span class="pill watering">watering</span></td></tr>
+    <tr><td>job J / zone Z</td><td><code>None</code> or other</td><td>stop (if needed), then <code>irrigate_zone(Z, mins)</code>. On success: set <code>ends_at</code>, <code>applied=(J,Z)</code></td></tr>
+  </table>
+
+  <div class="box insight">
+    <div class="t">💡 Why level-triggered?</div>
+    The worker never relies on "an event happened." It only ever asks "does reality match the goal?"
+    If a client makes three rapid edits, or an event is missed, or the worker restarts — it doesn't matter.
+    The next tick re-derives the one correct command from current state. This is the same principle
+    Kubernetes controllers use, and it's why the system is hard to desync.
+  </div>
+</section>
+
+<!-- ───────────────────────── BACKOFF ───────────────────────── -->
+<section id="backoff">
+  <h2><span class="n">⑦</span> Retry &amp; Exponential Backoff</h2>
+  <p>When a command fails (timeout, connection reset, device busy), we don't retry immediately — that
+  just adds load to a device that's already struggling. Instead we schedule the next attempt with
+  <strong>capped exponential backoff plus jitter</strong>:</p>
+
+  <pre><span class="f">delay</span> = min(<span class="k">30s</span>, <span class="k">1s</span> × <span class="k">2</span><sup>n</sup>) × (<span class="k">1</span> ± <span class="k">0.3</span> jitter)
+<span class="c"># n grows on each consecutive failure, resets to 0 on success</span></pre>
+
+  <div class="diagram">
+    <svg viewBox="0 0 700 180" xmlns="http://www.w3.org/2000/svg" font-family="Inter,sans-serif" font-size="12">
+      <!-- timeline -->
+      <line x1="40" y1="140" x2="680" y2="140" stroke="#5f6368" stroke-width="1.5"/>
+      <text x="40" y="165" font-size="10" fill="#5f6368">time →</text>
+      <!-- attempts with growing gaps -->
+      <!-- positions roughly proportional to cumulative 1,2,4,8,16,30 capped -->
+      <g fill="#e37400">
+        <circle cx="60"  cy="140" r="6"/><text x="60"  y="125" text-anchor="middle" font-size="10" fill="#e37400">try</text>
+        <circle cx="95"  cy="140" r="6"/><text x="95"  y="125" text-anchor="middle" font-size="9">+1s</text>
+        <circle cx="150" cy="140" r="6"/><text x="150" y="125" text-anchor="middle" font-size="9">+2s</text>
+        <circle cx="240" cy="140" r="6"/><text x="240" y="125" text-anchor="middle" font-size="9">+4s</text>
+        <circle cx="390" cy="140" r="6"/><text x="390" y="125" text-anchor="middle" font-size="9">+8s</text>
+        <circle cx="560" cy="140" r="6"/><text x="560" y="125" text-anchor="middle" font-size="9">+16s</text>
+      </g>
+      <circle cx="650" cy="140" r="8" fill="#1e8e3e"/><text x="650" y="123" text-anchor="middle" font-size="10" fill="#1e8e3e" font-weight="600">✓</text>
+      <text x="650" y="165" text-anchor="middle" font-size="9" fill="#1e8e3e">success → reset</text>
+      <!-- cap line -->
+      <line x1="560" y1="60" x2="680" y2="60" stroke="#d93025" stroke-dasharray="4" stroke-width="1"/>
+      <text x="620" y="54" text-anchor="middle" font-size="9" fill="#d93025">30s cap</text>
+    </svg>
+    <div class="cap">Retry spacing grows 1→2→4→8→16→30s (jittered), then holds at the 30s cap until the device answers — then resets to zero.</div>
+  </div>
+
+  <p>The same backoff covers <strong>both</strong> failure types you asked about:</p>
+  <ul>
+    <li><strong>Command rejected/timed out</strong> — the device was reachable but busy/unresponsive.</li>
+    <li><strong>Connection failed</strong> — couldn't even open the socket (wrong IP, device asleep).</li>
+  </ul>
+  <p>While retrying, the UI shows <span class="pill retrying">Retrying in&nbsp;Ns</span> with a live
+  countdown to the next attempt, so it's obvious the system is working the problem, not stuck.</p>
+
+  <div class="box note">
+    <div class="t">⚠ Reads are exempt</div>
+    The best-effort rain-sensor poll does <em>not</em> trigger backoff or flip the device offline on
+    failure — reads from the ESP-ME3 are inherently unreliable and we don't want a failed read to look
+    like a real fault. Only <em>commands</em> drive the backoff/online machinery.
+  </div>
+</section>
+
+<!-- ───────────────────────── TIMING ───────────────────────── -->
+<section id="timing">
+  <h2><span class="n">⑧</span> Queue Timing &amp; Scheduling</h2>
+  <p>The queue runs jobs sequentially, head-first, entirely server-side (the ESP-ME3 has no concept of
+  a queue). The flow:</p>
+  <ol>
+    <li>The head's start command is confirmed → its <code>ends_at = now + duration</code> is set. The
+        countdown is now authoritative and ticks independently of the device.</li>
+    <li>When <code>now ≥ ends_at</code>, the worker pops the head and advances. <code>applied</code> is
+        cleared so the next head gets started.</li>
+    <li>The next head is a fresh target → the worker issues its start command, and the cycle repeats.</li>
+  </ol>
+
+  <h3>Editing the queue mid-run</h3>
+  <p>Any change is just a state mutation under the lock, followed by a version bump that wakes the
+  worker. The worker re-derives the correct command:</p>
+  <table>
+    <tr><th>Client action</th><th>Effect on head</th><th>Worker response</th></tr>
+    <tr><td><strong>Add</strong> (queue empty)</td><td>new head</td><td>start it</td></tr>
+    <tr><td><strong>Add</strong> (already running)</td><td>appended, stays pending</td><td>nothing until it reaches head</td></tr>
+    <tr><td><strong>Run-now / shortcut</strong></td><td>inserted at head</td><td>stop current, start new head</td></tr>
+    <tr><td><strong>Reorder</strong> a new job to top</td><td>head changes</td><td><code>applied≠head</code> → re-apply</td></tr>
+    <tr><td><strong>Edit duration</strong> of head</td><td><code>ends_at</code> cleared, retarget</td><td>re-apply with new minutes</td></tr>
+    <tr><td><strong>±5/±15 adjust</strong></td><td>remaining time changed, retarget</td><td>stop + restart at new time</td></tr>
+    <tr><td><strong>Stop</strong></td><td>head popped</td><td>start next head (or stop)</td></tr>
+  </table>
+
+  <div class="box note">
+    <div class="t">⚠ Why adjust = stop + restart</div>
+    The ESP-ME3 has no "add 5 minutes" command. To change a running zone's time we must stop it and
+    re-issue <code>irrigate_zone</code> with the new total. The worker handles this transparently via
+    the retarget → re-apply path; the user just sees the timer jump.
+  </div>
+</section>
+
+<!-- ───────────────────────── SYNC ───────────────────────── -->
+<section id="sync">
+  <h2><span class="n">⑨</span> Multi-Client Sync</h2>
+  <p>Every browser stays live without polling spam, using <strong>long-polling on a version number</strong>:</p>
+  <div class="diagram">
+    <svg viewBox="0 0 720 220" xmlns="http://www.w3.org/2000/svg" font-family="Inter,sans-serif" font-size="12">
+      <!-- lanes -->
+      <text x="70" y="24" text-anchor="middle" font-weight="600" fill="#1a73e8">Browser A</text>
+      <text x="360" y="24" text-anchor="middle" font-weight="600" fill="#1e8e3e">Server</text>
+      <text x="650" y="24" text-anchor="middle" font-weight="600" fill="#1a73e8">Browser B</text>
+      <line x1="70" y1="34" x2="70" y2="210" stroke="#c3d7fa" stroke-width="2"/>
+      <line x1="360" y1="34" x2="360" y2="210" stroke="#a8d5b5" stroke-width="2"/>
+      <line x1="650" y1="34" x2="650" y2="210" stroke="#c3d7fa" stroke-width="2"/>
+
+      <!-- B is parked on a long-poll -->
+      <line x1="650" y1="55" x2="360" y2="65" stroke="#5f6368" stroke-width="1.3" marker-end="url(#f)"/>
+      <text x="505" y="50" text-anchor="middle" font-size="10" fill="#5f6368">GET /state?since=41</text>
+      <rect x="300" y="62" width="120" height="20" rx="4" fill="#fff8e1" stroke="#e37400"/>
+      <text x="360" y="76" text-anchor="middle" font-size="9" fill="#e37400">parked (v==41)</text>
+
+      <!-- A makes a change -->
+      <line x1="70" y1="110" x2="360" y2="110" stroke="#1a73e8" stroke-width="1.5" marker-end="url(#f)"/>
+      <text x="210" y="104" text-anchor="middle" font-size="10" fill="#1a73e8">POST /queue/add</text>
+      <rect x="300" y="118" width="120" height="22" rx="4" fill="#e6f4ea" stroke="#1e8e3e"/>
+      <text x="360" y="133" text-anchor="middle" font-size="10" fill="#1e8e3e">v 41 → 42 · notify</text>
+
+      <!-- responses fan out -->
+      <line x1="360" y1="150" x2="70" y2="165" stroke="#1e8e3e" stroke-width="1.3" marker-end="url(#f)"/>
+      <text x="200" y="150" text-anchor="middle" font-size="9" fill="#1e8e3e">200 {state v42}</text>
+      <line x1="360" y1="150" x2="650" y2="165" stroke="#1e8e3e" stroke-width="1.3" marker-end="url(#f)"/>
+      <text x="520" y="150" text-anchor="middle" font-size="9" fill="#1e8e3e">long-poll wakes → v42</text>
+
+      <text x="650" y="190" text-anchor="middle" font-size="10" fill="#5f6368">re-renders, re-parks on v42</text>
+      <defs><marker id="f" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#5f6368"/></marker></defs>
+    </svg>
+    <div class="cap">B parks on <code>?since=41</code>. When A's change bumps the version to 42, the server wakes B's request immediately — B re-renders and re-parks. No polling loop, sub-second convergence.</div>
+  </div>
+  <p>The same mechanism delivers <em>worker-driven</em> changes (a job confirmed running, a retry
+  scheduled, the countdown advancing the queue) to every browser — the worker bumps the version exactly
+  like a client edit does.</p>
+</section>
+
+<!-- ───────────────────────── API ───────────────────────── -->
+<section id="api">
+  <h2><span class="n">⑩</span> HTTP API</h2>
+  <table>
+    <tr><th>Method · Path</th><th>Purpose</th></tr>
+    <tr><td><code>GET /api/state?since=&lt;v&gt;</code></td><td>Long-poll. Returns the full state once <code>version ≠ v</code> (or after ~25s).</td></tr>
+    <tr><td><code>GET /api/zones</code></td><td>Zone list with names, visibility, display order.</td></tr>
+    <tr><td><code>GET /api/scan</code></td><td>Find RainBird devices: TCP sweep → MAC-OUI filter → protocol handshake confirmation.</td></tr>
+    <tr><td><code>POST /api/queue/add</code></td><td>Append a job <code>{zone_id, duration_min}</code>.</td></tr>
+    <tr><td><code>POST /api/queue/add-many</code></td><td>Append several jobs atomically (multi-select).</td></tr>
+    <tr><td><code>POST /api/queue/run-now</code></td><td>Insert at head (shortcuts, preemption).</td></tr>
+    <tr><td><code>POST /api/queue/remove · reorder · edit · adjust</code></td><td>Mutate the queue.</td></tr>
+    <tr><td><code>POST /api/queue/stop · stop-all</code></td><td>Pop head / clear queue.</td></tr>
+    <tr><td><code>POST /api/settings</code></td><td><code>load</code> / <code>save</code> (IP, password, zone names, order, visibility, shortcuts).</td></tr>
+  </table>
+
+  <h3>State payload (what every client renders from)</h3>
+  <pre><span class="f">{</span>
+  <span class="s">"version"</span>: <span class="k">42</span>,
+  <span class="s">"queue"</span>: [ <span class="f">{</span> id, zone_id, name, duration_sec, state, remaining_sec <span class="f">}</span>, … ],
+  <span class="s">"controller_state"</span>: <span class="s">"watering"</span>,   <span class="c">// idle|connecting|watering|retrying|offline</span>
+  <span class="s">"controller_online"</span>: <span class="k">true</span>,
+  <span class="s">"rain_sensor"</span>: <span class="k">false</span>,
+  <span class="s">"next_retry_at"</span>: <span class="k">null</span>,         <span class="c">// epoch, if backing off</span>
+  <span class="s">"last_error"</span>: <span class="k">null</span>,
+  <span class="s">"server_time"</span>: <span class="k">1781200000.0</span>     <span class="c">// for client clock-skew correction</span>
+<span class="f">}</span></pre>
+</section>
+
+<!-- ───────────────────────── FAILURE ───────────────────────── -->
+<section id="failure">
+  <h2><span class="n">⑪</span> Failure Modes &amp; Behaviour</h2>
+  <table>
+    <tr><th>Scenario</th><th>What the user sees</th><th>What the system does</th></tr>
+    <tr><td>Wrong / stale IP</td><td><span class="pill retrying">Retrying in Ns</span>, head stuck <span class="pill retrying">starting</span></td><td>Backs off, retries forever. Fix IP in Settings → next attempt succeeds.</td></tr>
+    <tr><td>Device busy (transient)</td><td>brief <span class="pill retrying">Retrying</span>, then <span class="pill watering">Watering</span></td><td>1–2 backed-off retries, command lands, countdown starts.</td></tr>
+    <tr><td>Device unplugged mid-run</td><td>timer keeps counting (last known truth)</td><td>Reads fail silently; the run's <code>ends_at</code> still expires on schedule.</td></tr>
+    <tr><td>Server restart</td><td>queue intact</td><td>State is persisted to <code>state.json</code>; worker re-applies the head on boot.</td></tr>
+    <tr><td>Two clients edit at once</td><td>both converge to the same result</td><td>All writes serialize on the lock; last write wins; version bump syncs everyone.</td></tr>
+    <tr><td>Controller not configured</td><td>"No controller configured" prompt</td><td>Worker idles; nothing is attempted until IP+password are saved.</td></tr>
+  </table>
+
+  <div class="box insight">
+    <div class="t">💡 The net effect</div>
+    The UI is <strong>always responsive and always honest</strong>. Editing the queue never blocks on the
+    device. A flaky controller shows as "retrying," not "broken." And whatever you see in one browser,
+    everyone sees within a second.
+  </div>
+</section>
+
+</div>
+
+<footer>
+  RainBird Web App · architecture document · generated for the design review
+</footer>
+
+</body>
+</html>
